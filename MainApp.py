@@ -63,7 +63,7 @@ def get_commands(mailbox):
     for msg in email_messages:
         print('payload: {}'.format(msg.get_payload()))
         print('type(payload): {}'.format(type(msg.get_payload())))
-        commands.append(msg.get_payload())
+        commands.append(msg.get_payload().strip())
     
     return commands
 
@@ -74,17 +74,19 @@ def build_command_from_str(command):
     return cmd_msg
 
 def send_arduino_command(radio, command, timeout=5.0):
-    print('Sending command: {}'.format(command))
+    print('Preparing to send command: {}'.format(command))
     command = build_command_from_str(command)
     start_time = time.time()
     response = ''
     while start_time + timeout >= time.time():
         radio.stopListening()
+        print('Sending command: {}'.format(command))
         radio.write(command)
         radio.startListening()
+        send_time = time.time()
         while not radio.available():
             time.sleep(0.002)
-            if start_time + timeout/10 >= time.time():
+            if send_time + timeout/10 <= time.time():
                 break
 
         # Read a message if one is available.
@@ -101,7 +103,7 @@ def send_arduino_command(radio, command, timeout=5.0):
             break
 
     if not response:
-        print('Command, {}, timed out.')
+        print('Command, {}, timed out.'.format(command))
 
     radio.stopListening()
 
@@ -117,22 +119,28 @@ def close_door(mailbox, radio):
     response = send_arduino_command(radio, 'CloseDoor')
 
 def main():
+    print('Setting up mailbox')
     mailbox = get_mailbox('rasmcfall@gmail.com')
+    print('Setting up radio')
     radio = get_radio()
 
     while True:
+        mailbox.select('inbox')
         commands = get_commands(mailbox)
-        print('Received {} commands.'.format(len(commands)))
+        print('Received {} commands: {}'.format(len(commands), commands))
 
         # Parse commands and execute commands if needed
         if commands:
             for command in commands:
+                print('Processing command: {}'.format(command))
                 if command == 'CheckDoorStatus':
                     check_door_status(mailbox, radio)
                 elif command == 'OpenDoor':
                     open_door(mailbox, radio)
                 elif command == 'CloseDoor':
                     close_door(mailbox, radio)
+                else:
+                    print('Recieved invalid command: {}'.format(command))
             
         # Check arduino
         time.sleep(10)
