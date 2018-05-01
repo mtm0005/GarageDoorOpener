@@ -15,8 +15,8 @@ int garageDoorThreshold = 75;
 
 // -------------------- Function Definitions ---------------------------
 // Calculate average
-double calculateAverage(int array[], int arrayLength){
-  double sum;
+float calculateAverage(int array[], int arrayLength){
+  float sum;
   for (int i=0; i<arrayLength; i++){
     sum = sum + array[i];
   }
@@ -24,7 +24,7 @@ double calculateAverage(int array[], int arrayLength){
   return sum/arrayLength;
 }
 
-double calculate_distance() {
+float calculate_distance() {
   // Clear the trigPin
   digitalWrite(trigPin, LOW);
   delay(2);
@@ -52,31 +52,8 @@ double calculate_distance() {
 // Returns true if garage door is closed
 bool isGarageDoorClosed(){
   Serial.println("Entering isGarageDoorClosed");
-  // Clear the trigPin
-//  digitalWrite(trigPin, LOW);
-//  delay(2);
-//
-//  // Build array of distances
-//  int distance[sampleCount];
-//  for (int i=0; i<sampleCount; i++){
-//    
-//    // Sets the trigPin on HIGH state for 10 micro seconds
-//    digitalWrite(trigPin, HIGH);
-//    delayMicroseconds(10);
-//    digitalWrite(trigPin, LOW);
-//    
-//    // Read the echoPin, return the sound wave travel time in microseconds
-//    duration = pulseIn(echoPin, HIGH);
-//    Serial.print(duration);
-//    Serial.print(", ");
-//    // Calculating the distance (cm)
-//    distance[i] = duration*0.034/2;
-//    Serial.println(distance[i]);
-//  }
-//
-//  double average = calculateAverage(distance, sampleCount);
 
-  double average = calculate_distance();
+  float average = calculate_distance();
   
   Serial.print("Average distance: ");
   Serial.println(average);
