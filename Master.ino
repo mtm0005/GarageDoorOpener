@@ -3,8 +3,8 @@
 #include<RF24.h>
 
 // Define pin locations
-const int trigPin = 9;
-const int echoPin = 10;
+const int trigPin = 2;
+const int echoPin = 3;
 const int garageDoorOpener = 5;
 RF24 radio(7, 8);
 
