@@ -72,7 +72,7 @@ bool isGarageDoorClosed(){
 bool toggleGarageDoor(){
   // Execute garage door command
   digitalWrite(garageDoorOpener, HIGH);
-  delay(1000);
+  delay(250);
   digitalWrite(garageDoorOpener, LOW);
   // Return true if command was executed properly
   return true;
