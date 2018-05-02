@@ -133,7 +133,6 @@ void loop(){
         bool toggleResult = toggleGarageDoor();
         Serial.println("Garage door determined to be close");
         Serial.println("toggleGarageDoor function called");
-        Serial.println("Delay for 5 seconds");
         delay(5000); // Delay time for garage door to open/close
         if (!isGarageDoorClosed()){
           Serial.println("Garage door opened successfully");
