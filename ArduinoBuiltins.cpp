@@ -1,16 +1,14 @@
 #include "ArduinoBuiltins.hpp"
+#include "ArduinoPin.hpp"
 #include <iostream>
 
 SerialPort Serial;
 
+const int NUM_PINS = 14;
+ArduinoPin pins[NUM_PINS];
+
 // TO-DO: Consider adding a time variable that would increment when delay
 //        is called.
-
-// TO-DO: Implement a Pin class.
-int pin_states[13] = {-1, -1, -1, -1, -1, -1,
-                      -1, -1, -1, -1, -1, -1, -1};
-int pin_modes[13] = {-1, -1, -1, -1, -1, -1,
-                      -1, -1, -1, -1, -1, -1, -1};
 
 void delay(int s)
 {
@@ -25,19 +23,19 @@ void delayMicroseconds(int ms)
 void digitalWrite(int pin, int state)
 {
     std::cout << "Setting pin " << pin << " to state " << state << std::endl;
-    pin_states[pin] = state;
+    pins[pin].digitalWrite(state);
 }
 
 int digitalRead(int pin)
 {
     std::cout << "Reading pin " << pin << "'s value." << std::endl;
-    return pin_states[pin];
+    return pins[pin].digitalRead();
 }
 
 void pinMode(int pin, int mode)
 {
     std::cout << "Setting pin " << pin << " to mode " << mode << std::endl;
-    pin_modes[pin] = mode;
+    pins[pin].pinMode(mode);
 }
 
 // Waits for the pin to go to a state (HIGH or LOW). Then starts timing and
@@ -46,7 +44,7 @@ int pulseIn(int pin, int state)
 {
     std::cout << "Detecting pulse duration for pin " << pin << ", in state ";
     std::cout << state << std::endl;
-    return 0;
+    return pins[pin].pulseIn(state);
 }
 
 SerialPort::SerialPort()
