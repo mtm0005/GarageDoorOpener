@@ -1,6 +1,11 @@
 // Include libraries
+#ifdef ARDUINO
 #include<SPI.h>
 #include<RF24.h>
+#else
+#include <RF24_emulator.hpp>
+#include <ArduinoBuiltins.hpp>
+#endif
 
 // Define pin locations
 const int trigPin = 2;
@@ -198,9 +203,3 @@ void loop(){
   }
   delay(200);
 }
-
-
-
-
-
-
