@@ -13,6 +13,8 @@ int sampleCount = 10; // Number of samples used to check door status
 int garageDoorThreshold = 75;   // Garage door status threshold
                                 // Above this value represents a close door
                                 // Below this value represents an open door
+int garageDelay = 15;           // Amount of time it takes for the door to close/open
+int timeout = 3;                // Times to try garageDoorRemote
 
 
 // --------------------- Function Definitions ------------------------
@@ -64,7 +66,7 @@ char isGarageDoorClosed(){
     return false;  
 }
 
-bool toggleGarageDoor(){
+void garageDoorRemote(){
     // Execute garage door command
     digitalWrite(garageDoorOpener, HIGH);
     delay(250);
@@ -72,7 +74,26 @@ bool toggleGarageDoor(){
 
     // Return true if command was executed properly
     // Note that this does not signify a successful open/close
-    return true;
+}
+
+bool garageDoorCommand(char desiredStatus){
+    // returns true if the garageDoorCommand was executed successfully
+    for (int i=0; i<timeout; i++){
+        garageDoorRemote();
+        
+        delay(garageDelay);
+
+        if (desiredStatus == "open" && !isGarageDoorClosed()){
+            return true;
+        }
+        else if (desiredStatus == "closed" && isGarageDoorClosed()){
+            return true;
+        }
+        // Should be put another delay here? 
+        // What are the circumstances for this?
+    }
+
+    return false;
 }
 
 char readMessage(){
@@ -82,14 +103,8 @@ char readMessage(){
     return stringMessage(receivedMessage);
 }
 
-bool sendAck(char command, int ID, char ack="ack"){
+void sendMessage(char command, int ID, char message){
     //send message
-    return true
-}
-
-bool sendResult(char command, int ID, char result){
-    //send result
-    return true
 }
 
 // ----------------------- Setup ----------------------------
@@ -118,37 +133,48 @@ void loop(){
     char receivedMessage[32] = {0};
     if (radio.available()){
 
-        sendAck(receivedMessage(), 999);
+        sendMessage(receivedMessage(), 999, "ack");
         if (receivedMessage() == "openDoor"){
             // openDoor command received
             if (isGarageDoorClosed()){
                 // open door
+                if (garageDoorCommand("open")){
+                    sendMessage("openDoor", 999, "open");
+                }
             }
             else{
                 // Door is already open
-                sendResult("open", 999)
+                sendMessage("openDoor", 999, "open");
             }
         }
         else if (receivedMessage() == closeDoor){
             // closeDoor command received
             if (!isGarageDoorClosed()){
                 // close door
+                if (garageDoorCommand("closed")){
+                    sendMessage("closeDoor", 999, "closed");
+                }
             }
             else{
                 // door is already closed
+                sendMessage("closeDoor", 999, "closed");
             }
         }
         else if (receivedMessage() == "checkDoorStatus"){
             // checkDoorStatus command received
             if (isGarageDoorClosed()){
                 // Garage door is closed
+                sendMessage("checkDoorStatus", 999, "closed");
             }
             else{
                 // Garage door is open
+                sendMessage("checkDoorStatus", 999, "open");
             }
         }
         else{
             // Invalid command received
+            sendMessage("Unknown", 999, "Unknown Message");
         }
     }
+    delay(100);
 }
