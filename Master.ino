@@ -3,8 +3,9 @@
 #include<SPI.h>
 #include<RF24.h>
 #else
-#include <RF24_emulator.hpp>
-#include <ArduinoBuiltins.hpp>
+#include "Master.hpp"
+#include "RF24_emulator.hpp"
+#include "ArduinoBuiltins.hpp"
 #endif
 
 // Define pin locations
