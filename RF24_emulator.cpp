@@ -1,5 +1,6 @@
 #include "RF24_emulator.hpp"
 #include <iostream>
+#include <string>
 
 RF24::RF24(int p, int q) 
 {
@@ -67,6 +68,15 @@ void RF24::enableDynamicPayloads()
 void RF24::read(char* msg, unsigned long msg_size)
 {
     std::cout << "read" << std::endl;
+    if (msg_size > this->command.length())
+    {
+        strcpy(msg, this->command.c_str());
+    }
+    else
+    {
+        std::cout << "Error: Command exceeded buffer size." << std::endl;
+        std::cout << "       Ignoring command." << std::endl;
+    }
 }
 
 void RF24::write(const char msg[], unsigned long msg_size)
@@ -77,5 +87,20 @@ void RF24::write(const char msg[], unsigned long msg_size)
 bool RF24::available()
 {
     std::cout << "available" << std::endl;
-    return msg_available;
+    std::cout << "Enter command or type, \"exit\" to quit: ";
+    getline(std::cin, this->command);
+    if (this->command.empty())
+    {
+        this->msg_available = false;
+    }
+    else if (this->command == "exit")
+    {
+        std::exit(1);
+    }
+    else 
+    {
+        this->msg_available = true;
+    }
+
+    return this->msg_available;
 }

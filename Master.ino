@@ -126,7 +126,8 @@ void loop(){
     radio.stopListening();
     radio.read(receivedMessage, sizeof(receivedMessage));
     
-    Serial.println("Message Received!!!");
+    Serial.print("Message Received: ");
+    Serial.println(radio.command);
 
     String stringMessage(receivedMessage);
 

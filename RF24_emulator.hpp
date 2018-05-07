@@ -1,3 +1,5 @@
+#include <string>
+
 #define RF24_PA_MIN 0
 #define RF24_PA_LOW 1
 #define RF24_PA_HIGH 2
@@ -24,6 +26,8 @@ class RF24 {
     void read(char* msg, unsigned long msg_size);
     void write(const char msg[], unsigned long msg_size);
     bool available();
+
+    std::string command;
 
     private:
     bool msg_available;

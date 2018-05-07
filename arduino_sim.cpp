@@ -3,6 +3,7 @@
 int main()
 {
     setup();
-    loop();
+    while (true)
+        loop();
     return 0;
 }
