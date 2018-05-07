@@ -1,6 +1,12 @@
 // Include libraries
+#ifdef ARDUINO
 #include<SPI.h>
 #include<RF24.h>
+#else
+#include "Master.hpp"
+#include "RF24_emulator.hpp"
+#include "ArduinoBuiltins.hpp"
+#endif
 
 // Define pin locations
 const int trigPin = 2;
@@ -120,7 +126,8 @@ void loop(){
     radio.stopListening();
     radio.read(receivedMessage, sizeof(receivedMessage));
     
-    Serial.println("Message Received!!!");
+    Serial.print("Message Received: ");
+    Serial.println(radio.command);
 
     String stringMessage(receivedMessage);
 
@@ -197,9 +204,3 @@ void loop(){
   }
   delay(200);
 }
-
-
-
-
-
-
