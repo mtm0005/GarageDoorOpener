@@ -179,7 +179,7 @@ void sendMessage(String command, int ID, String message) {
     idString = std::to_string(ID);
     #endif
     String response = command + ", " + idString + ", " + message;
-    radio.write(response.c_str(), sizeof(response.c_str()));
+    radio.write(response.c_str(), strlen(response.c_str()));
     Serial.print("response: ");
     Serial.println(response);
 }
