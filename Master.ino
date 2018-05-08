@@ -125,7 +125,7 @@ bool garageDoorCommand(String desiredStatus) {
             return true;
         }
     }
-    Serial.println("garageDoorCommand failed");
+    Serial.println("Tad can suck a dick because the code TIMED OUT");
     return false;
 }
 
