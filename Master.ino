@@ -81,14 +81,14 @@ char isGarageDoorClosed() {
     float average = calculateDistance();
     
     if (average > garageDoorThreshold) {
-        // A distance larger than the threshold signifies a clsoed door
+        // A distance larger than the threshold signifies an open door
         Serial.println("Garage door determined to be close");
-        return true;
+        return false;
     }
 
-    // Otherwise, the door is open
+    // Otherwise, the door is closed
     Serial.println("Garage door determined to be open");
-    return false;  
+    return true;  
 }
 
 void toggleGarageDoor() {
@@ -103,7 +103,7 @@ void toggleGarageDoor() {
 
 bool garageDoorCommand(String desiredStatus) {
     // returns true if the garageDoorCommand was executed successfully
-    for (int i=0; i<ITERATIONATTEMPTS; i++){
+    for (int i=0; i<ITERATIONATTEMPTS; i++) {
         Serial.print("toggleGarageDoor: iteration ");
         Serial.println(i+1);
         toggleGarageDoor();
