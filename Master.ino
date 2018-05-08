@@ -10,19 +10,25 @@
 
 #include <stdlib.h>
 
+// Define global variables
 // Define pins
 const int trigPin = 2;
 const int echoPin = 3;
 const int garageDoorOpener = 5;
 RF24 radio(7, 8);
 
-// Define universal variables
-int sampleCount = 10; // Number of samples used to check door status
-int garageDoorThreshold = 75;   // Garage door status threshold
-                                // Above this value represents a close door
-                                // Below this value represents an open door
-int garageDelay = 15;           // Amount of time it takes for the door to close/open
-const int ITERATIONATTEMPTS = 3;                // Times to try toggleGarageDoor
+// Number of samples used to check door status
+int sampleCount = 10;
+
+// Garage door status threshold. Below this value represents a close door and
+// above this value represents an open door.
+int garageDoorThreshold = 75;
+
+// Amount of time it takes for the door to close/open in ms
+int garageDelay = 15000;
+
+// Times to try toggleGarageDoor
+const int ITERATIONATTEMPTS = 3;
 const String OPENDOOR = "openDoor";
 const String CLOSEDOOR = "closeDoor";
 const String CHECKSTATUS = "checkStatus";
