@@ -82,12 +82,12 @@ char isGarageDoorClosed() {
     
     if (average > garageDoorThreshold) {
         // A distance larger than the threshold signifies an open door
-        Serial.println("Garage door determined to be close");
+        Serial.println("Garage door determined to be open");
         return false;
     }
 
     // Otherwise, the door is closed
-    Serial.println("Garage door determined to be open");
+    Serial.println("Garage door determined to be closed");
     return true;  
 }
 
