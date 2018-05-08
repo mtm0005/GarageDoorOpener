@@ -6,9 +6,9 @@
 #include "Master.hpp"
 #include "RF24_emulator.hpp"
 #include "ArduinoBuiltins.hpp"
-#include <vector>
-#include <sstream>
 #endif
+
+#include <stdlib.h>
 
 // Define pins
 const int trigPin = 2;
@@ -123,45 +123,41 @@ bool garageDoorCommand(String desiredStatus) {
     return false;
 }
 
-std::vector<std::string> split(const std::string& s, char delimiter) {
-   std::vector<std::string> tokens;
-   std::string token;
-   std::istringstream tokenStream(s);
-   while (std::getline(tokenStream, token, delimiter)) {
-      tokens.push_back(token);
-   }
-
-   return tokens;
-}
-
 struct Command readMessage() {
     Serial.println("Reading message");
     char receivedMessage[32] = {0};
     radio.stopListening();
     radio.read(receivedMessage, sizeof(receivedMessage));
-    
-    String stringMessage(receivedMessage);
 
-    Serial.print("Recieved message: ");
-    Serial.println(stringMessage);
+    String tokens[3] = {"", "", ""};
+    char* token = strtok(receivedMessage, ",");
 
-    std::vector<std::string> commandVector = split(stringMessage, ',');
+    for (int i = 0; i < 3; i++) {
+        if (token == NULL) {
+            break;
+        }
+        String item(token);
+        tokens[i] = item;
+        token = strtok(NULL, ",");
+    }
 
     Serial.println("message was split");
     Command command;
 
     // Reject messages that aren't in the proper form.
-    if (commandVector.size() > 3 || commandVector.size() < 2) {
+    if (tokens[0] == "" || tokens[1] == "") {
         command.name = "INVALID";
         command.ID = -1;
         return command;
     }
 
-    command.name = commandVector[0];
-    command.ID = std::stoi(commandVector[1]);
-    if (commandVector.size() > 2) {
-        command.value = commandVector[2];
-    }
+    command.name = tokens[0];
+    #ifdef ARDUINO
+    command.ID = tokens[1].toInt();
+    #else
+    command.ID = std::stoi(tokens[1]);
+    #endif
+    command.value = tokens[2];
 
     Serial.println("Command: ");
     Serial.print("    name: ");
@@ -176,7 +172,13 @@ struct Command readMessage() {
 
 void sendMessage(String command, int ID, String message) {
     Serial.println("Sending message...");
-    String response = command + ", " + std::to_string(ID) + ", " + message;
+    String idString;
+    #ifdef ARDUINO
+    idString = String(ID);
+    #else
+    idString = std::to_string(ID);
+    #endif
+    String response = command + ", " + idString + ", " + message;
     radio.write(response.c_str(), sizeof(response.c_str()));
     Serial.print("response: ");
     Serial.println(response);
