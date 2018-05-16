@@ -6,10 +6,17 @@ import getpass
 import imaplib
 import RPi.GPIO as GPIO
 import spidev
+import smtplib
 import sys
 import time
 
+from email.mime.text import MIMEText
+
 from lib_nrf24 import NRF24
+
+PASSWORD = 'rasmcfall1981'
+SENDING_EMAIL = 'rasmcfall@gmail.com'
+RECV_EMAIL = 'mtm0005@gmail.com'
 
 def get_mailbox(email_address, password, server='imap.gmail.com'):
     mail = imaplib.IMAP4_SSL(server)
@@ -65,6 +72,24 @@ def get_commands(mailbox):
         commands.append(msg.get_payload().strip())
     
     return commands
+
+def send_email(msg: str, subject='Garage door update'):
+    email_msg = MIMEText(msg)
+    email_msg['Subject'] = subject
+    email_msg['From'] = SENDING_EMAIL
+    email_msg['To'] = RECV_EMAIL
+
+    try:
+        server = smtplib.SMTP_SSL('imap.gmail.com')
+        server.login(SENDING_EMAIL, PASSWORD)
+        server.sendmail(SENDING_EMAIL, [RECV_EMAIL], email_msg.as_string())
+        server.quit()
+    except:
+        print('Error: Failed to send email ({})'.format(msg))
+        with open('sending_errors.txt', 'a') as error_file:
+            error_file.write('Exception was triggered while sending mail\n')
+            error_file.write(str(sys.exc_info()[0]))
+            error_file.write('\n-----------------------------------------\n')
 
 def build_command_from_str(command):
     cmd_msg = list(command)
@@ -144,7 +169,9 @@ def check_door_status(mailbox, radio):
     time.sleep(0.01)
     response = get_for_response(radio, timeout=45.0)
     print('Received response: {}'.format(response))
+
     # Email response back to the user.
+    send_email(response)
 
 def open_door(mailbox, radio):
     ack = send_arduino_command(radio, 'openDoor, 1000')
@@ -173,8 +200,7 @@ def process_command(command, mailbox, radio):
 
 def main():
     print('Setting up mailbox')
-    password = getpass.getpass()
-    mailbox = get_mailbox('rasmcfall@gmail.com', password)
+    mailbox = get_mailbox('rasmcfall@gmail.com', PASSWORD)
     print('Setting up radio')
     radio = get_radio()
     exception_counter = 0
@@ -196,7 +222,7 @@ def main():
                 msg = 'Attempting to log into email acount again...\n'
                 print(msg)
                 error_file.write(msg)
-                mailbox = get_mailbox('rasmcfall@gmail.com', password)
+                mailbox = get_mailbox('rasmcfall@gmail.com', PASSWORD)
                 continue
             else:
                 time.sleep(5)
@@ -219,10 +245,9 @@ def main():
                 
         print('Received {} commands: {}'.format(len(commands), commands))
 
-        # Parse commands and execute commands if needed
-        if commands:
-            for command in commands:
-                process_command(command, mailbox, radio)
+        # Parse commands and execute commands
+        for command in commands:
+            process_command(command, mailbox, radio)
 
         print('-----------------------------------------\n')
         time.sleep(10)
