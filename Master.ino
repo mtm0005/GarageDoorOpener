@@ -194,22 +194,22 @@ void sendMessage(String command, int ID, String message) {
 void handleCommand(Command command) {
     Serial.println("Handling message");
     sendMessage(command.name, command.ID, ACK);
-    String result;
+    String value;
     if (command.name == OPENDOOR) {
         // openDoor command received
         if (isGarageDoorClosed()) {
             // Open door
             if (garageDoorCommand(command.name)) {
-                result = SUCCESS;
+                value = SUCCESS;
             }
             else {
-                result = FAILURE;
+                value = FAILURE;
             }
         }
         else {
             // Door is already open
             Serial.println("Door was already open");
-            result = SUCCESS;
+            value = SUCCESS;
         }
     }
     else if (command.name == CLOSEDOOR) {
@@ -217,16 +217,16 @@ void handleCommand(Command command) {
         if (!isGarageDoorClosed()) {
             // Close door
             if (garageDoorCommand(command.name)) {
-                result = SUCCESS;
+                value = SUCCESS;
             }
             else {
-                result = FAILURE;
+                value = FAILURE;
             }
         }
         else {
             // Door is already closed
             Serial.println("Door was already closed");
-            result = SUCCESS;
+            value = SUCCESS;
         }
     }
     else if (command.name == CHECKSTATUS) {
@@ -234,20 +234,20 @@ void handleCommand(Command command) {
         Serial.println("checkStatus command received");
         if (isGarageDoorClosed()) {
             // Garage door is closed
-            result = "closed";
+            value = "closed";
         }
         else {
             // Garage door is open
-            result = "open";
+            value = "open";
         }
     }
     else {
         // Invalid command received
         Serial.println("Unknown message received");
-        result = "unknown message";
+        value = "unknown message";
     }
 
-    sendMessage(command.name, command.ID, result);
+    sendMessage(command.name, command.ID, value);
 }
 
 // ----------------------- Setup ----------------------------
