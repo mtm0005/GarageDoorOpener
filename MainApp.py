@@ -296,7 +296,8 @@ def main():
         if msg:
             send_email(msg, subject='Garage door alert!')
 
-        previous_door_status = current_door_status
+        if current_door_status:
+            previous_door_status = current_door_status
 
         print('-----------------------------------------\n')
         time.sleep(10)
