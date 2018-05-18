@@ -24,7 +24,7 @@ class RF24 {
     void openReadingPipe(int i, long int pipe);
     void enableDynamicPayloads();
     void read(char* msg, unsigned long msg_size);
-    void write(const char msg[], unsigned long msg_size);
+    bool write(const char msg[], unsigned long msg_size);
     bool available();
 
     std::string command;

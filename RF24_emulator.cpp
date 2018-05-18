@@ -79,9 +79,10 @@ void RF24::read(char* msg, unsigned long msg_size)
     }
 }
 
-void RF24::write(const char msg[], unsigned long msg_size)
+bool RF24::write(const char msg[], unsigned long msg_size)
 {
     std::cout << "write" << std::endl;
+    return true;
 }
 
 bool RF24::available()
