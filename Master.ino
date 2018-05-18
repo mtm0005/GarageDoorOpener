@@ -190,12 +190,12 @@ void sendMessage(String command, int ID, String message) {
     String response = command + ", " + idString + ", " + message;
     bool sendSuccess = radio.write(response.c_str(), strlen(response.c_str()));
     if (sendSuccess) {
-      Serial.println("Response sent");
-      Serial.print("response: ");
-      Serial.println(response);
+        Serial.println("Response sent");
+        Serial.print("response: ");
+        Serial.println(response);
     }
     else {
-      Serial.println("Response NOT sent");
+        Serial.println("Response NOT sent");
     }
 }
 
