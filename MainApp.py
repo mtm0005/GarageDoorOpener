@@ -17,6 +17,11 @@ from lib_nrf24 import NRF24
 PASSWORD = 'rasmcfall1981'
 SENDING_EMAIL = 'rasmcfall@gmail.com'
 RECV_EMAIL = 'mtm0005@gmail.com'
+MAX_CONNECTION_FAILURES = 3
+
+num_open_cmds = 0
+num_close_cmds = 0
+num_check_cmds = 0
 
 def get_mailbox(email_address, password, server='imap.gmail.com'):
     mail = imaplib.IMAP4_SSL(server)
@@ -163,27 +168,49 @@ def get_for_response(radio, timeout=5.0):
     return response
         
 
-def check_door_status(mailbox, radio):
-    ack = send_arduino_command(radio, 'checkStatus, 3000')
+def check_door_status(mailbox, radio, update_user=True):
+    global num_check_cmds
+    ack = send_arduino_command(radio, 'checkStatus, 3{}'.format(num_check_cmds))
+    num_check_cmds +=1
+    response = ''
+
+    if not ack:
+        print('Did not receive ACK')
+        return ''
+
     print('Received ack: {}'.format(ack))
-    time.sleep(0.01)
-    response = get_for_response(radio, timeout=45.0)
-    print('Received response: {}'.format(response))
+
+    if ack.split(',')[2].strip() == 'ack':
+        response = get_for_response(radio)
+        print('Received response: {}'.format(response))
+    else:
+        response = ack
 
     # Email response back to the user.
-    send_email(response)
+
+    status = ''
+
+    if response:
+        status = response.split(',')[2]
+
+    if update_user:
+        send_email(status)
+
+    return status.strip()
 
 def open_door(mailbox, radio):
-    ack = send_arduino_command(radio, 'openDoor, 1000')
+    global num_open_cmds
+    ack = send_arduino_command(radio, 'openDoor, 1{}'.format(num_open_cmds))
+    num_open_cmds += 1
     print('Received ack: {}'.format(ack))
-    time.sleep(0.01)
     response = get_for_response(radio, timeout=45.0)
     print('Received response: {}'.format(response))
 
 def close_door(mailbox, radio):
-    ack = send_arduino_command(radio, 'closeDoor, 2000')
+    global num_close_cmds
+    ack = send_arduino_command(radio, 'closeDoor, 2{}'.format(num_close_cmds))
+    num_close_cmds += 1
     print('Received ack: {}'.format(ack))
-    time.sleep(0.01)
     response = get_for_response(radio, timeout=45.0)
     print('Received response: {}'.format(response))
 
@@ -204,6 +231,7 @@ def main():
     print('Setting up radio')
     radio = get_radio()
     exception_counter = 0
+    previous_door_status = ''
 
     while True:
         print(str(datetime.datetime.now())) 
@@ -248,6 +276,27 @@ def main():
         # Parse commands and execute commands
         for command in commands:
             process_command(command, mailbox, radio)
+
+        # Get the current door status
+        current_door_status = ''
+        max_attempts = 3
+        num_attempts = 0
+        while ((not current_door_status) and (num_attempts < max_attempts)):
+            num_attempts += 1
+            current_door_status = check_door_status(mailbox, radio, update_user=False)
+        msg = ''
+
+        if current_door_status == 'open' and previous_door_status == 'closed':
+            msg = 'Door was opened at {}'.format(datetime.datetime.now())
+        elif current_door_status == 'closed' and previous_door_status == 'open':
+            msg = 'Door was closed at {}'.format(datetime.datetime.now())
+        elif num_attempts >= max_attempts:
+            msg = 'Raspi is having trouble getting garage door status.'
+
+        if msg:
+            send_email(msg, subject='Garage door alert!')
+
+        previous_door_status = current_door_status
 
         print('-----------------------------------------\n')
         time.sleep(10)
