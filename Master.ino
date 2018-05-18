@@ -22,7 +22,7 @@ int sampleCount = 10;
 
 // Garage door status threshold. Below this value represents a close door and
 // above this value represents an open door.
-int garageDoorThreshold = 75;
+int garageDoorThreshold = 130;
 
 // Amount of time it takes for the door to close/open in ms
 int garageDelay = 15000;
@@ -61,7 +61,7 @@ float calculateDistance() {
     delay(2);
 
     int distance[sampleCount];
-    long duration;
+    float duration;
     for (int i=0; i<sampleCount; i++) {
         // Build an array of sensor measurements
 
@@ -85,6 +85,12 @@ char isGarageDoorClosed() {
     // true indicates a closed door
 
     float average = calculateDistance();
+
+    
+    Serial.print("Average distance: ");
+    Serial.print(average);
+    Serial.print(" compared to ");
+    Serial.println(garageDoorThreshold);
     
     if (average > garageDoorThreshold) {
         // A distance larger than the threshold signifies an open door
@@ -130,7 +136,6 @@ bool garageDoorCommand(String desiredStatus) {
 }
 
 struct Command readMessage() {
-    Serial.println("Reading message");
     char receivedMessage[32] = {0};
     radio.stopListening();
     radio.read(receivedMessage, sizeof(receivedMessage));
@@ -147,7 +152,6 @@ struct Command readMessage() {
         token = strtok(NULL, ",");
     }
 
-    Serial.println("message was split");
     Command command;
 
     // Reject messages that aren't in the proper form.
@@ -177,7 +181,6 @@ struct Command readMessage() {
 }
 
 void sendMessage(String command, int ID, String message) {
-    Serial.println("Sending message...");
     String idString;
     #ifdef ARDUINO
     idString = String(ID);
@@ -185,14 +188,19 @@ void sendMessage(String command, int ID, String message) {
     idString = std::to_string(ID);
     #endif
     String response = command + ", " + idString + ", " + message;
-    radio.write(response.c_str(), strlen(response.c_str()));
-    Serial.print("response: ");
-    Serial.println(response);
+    bool sendSuccess = radio.write(response.c_str(), strlen(response.c_str()));
+    if (sendSuccess) {
+      Serial.println("Response sent");
+      Serial.print("response: ");
+      Serial.println(response);
+    }
+    else {
+      Serial.println("Response NOT sent");
+    }
 }
 
 
 void handleCommand(Command command) {
-    Serial.println("Handling message");
     sendMessage(command.name, command.ID, ACK);
     String value;
     if (command.name == OPENDOOR) {
@@ -271,14 +279,19 @@ void setup() {
     radio.enableDynamicPayloads();
     radio.setDataRate(RF24_250KBPS);
     radio.powerUp();
+
+    Serial.println("Arduino ready");
+
+    radio.startListening();
 }
 
 void loop() {
-    delay(100);
-    radio.startListening();
-
+    
     if (radio.available()) {
+        Serial.println("-------------------------------");
         Serial.println("Message available");
         handleCommand(readMessage());
+
+        radio.startListening();
     }
 }
