@@ -40,6 +40,8 @@ struct Command {
     String name;
     String value;
     int ID;
+    // TO-DO
+    // add command.variable
 };
 
 
@@ -169,6 +171,9 @@ struct Command readMessage() {
     #endif
     command.value = tokens[2];
 
+    // TO-DO
+    // Add ability to parse command.variable
+
     Serial.println("Command: ");
     Serial.print("    name: ");
     Serial.println(command.name);
@@ -181,6 +186,10 @@ struct Command readMessage() {
 }
 
 void sendMessage(String command, int ID, String message) {
+
+    // TO-DO
+    // Add ability to send command.variable
+
     String idString;
     #ifdef ARDUINO
     idString = String(ID);
@@ -249,11 +258,18 @@ void handleCommand(Command command) {
             value = "open";
         }
     }
+
+    // TO-DO
+    // Add ability to catch "set" commands
+
     else {
         // Invalid command received
         Serial.println("Unknown message received");
         value = "unknown message";
     }
+
+    // TO-DO
+    // add sendMessage ability to send command.variable.
 
     sendMessage(command.name, command.ID, value);
 }
@@ -289,7 +305,7 @@ void loop() {
     
     if (radio.available()) {
         Serial.println("-------------------------------");
-        Serial.println("Message available");
+        Serial.println("Message received");
         handleCommand(readMessage());
 
         radio.startListening();
