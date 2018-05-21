@@ -82,60 +82,6 @@ float calculateDistance() {
   return calculateAverage(distance, sampleCount);
 }
 
-bool calibrate() {
-    // Start with the garage door closed
-    // Determine sensor distance X times to determine the closed value
-    int thresholdTries = 3;
-    float distance[thresholdTries];
-    for (int i=0; i<thresholdTries; i++) {
-        distance[i] = calculateDistance();
-    }
-    float closedValue = calculateAverage(distance, thresholdTries);
-    // Trigger to open the garage door
-    toggleGarageDoor();
-
-    // Check every second until the garage OR prompt user for input when the garage is completely open
-    // TO-DO: verify that an appropriate delay is incorporated
-    garageDelay = 1500; // TO-DO
-
-    // Determine sensor distance X times to determine the open value
-    float distance[thresholdTries];
-    for (int i=0; i<thresholdTries; i++) {
-        distance[i] = calculateDistance();
-    }
-    float openValue = calculateAverage(distance, thresholdTries);
-
-    // Set garageDoorThreshold to be ~halfway between the two values
-    garageDoorThreshold = (openValue + closedValue)/2;
-
-    // Trigger to close the garage door
-    toggleGarageDoor();
-    // Wait appropraite amount of time
-    delay(garageDelay);
-
-    // Cycle a few times to verify that the new threshold works properly
-    bool calibrationCheck = true;
-    // Garage door should be closed
-    if (!isGarageDoorClosed()) {
-        return false; // return false if it doesn't read the correct value
-    }
-    // Cycle back again???
-    toggleGarageDoor();
-    delay(garageDelay);
-    // Garage door should be open
-    if (isGarageDoorClosed()) {
-        return false; // return false if it doesn't read the correct value
-    }
-    
-    toggleGarageDoor();
-    delay(garageDelay);
-    if (!isGarageDoorClosed()) {
-        return false; // return false if it doesn't read the correct value
-    }
-
-    return true; // return true if all threshold test were passed
-}
-
 char isGarageDoorClosed() {
     // Check the current status of the grage door
     // true indicates a closed door
