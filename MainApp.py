@@ -59,6 +59,7 @@ def get_command(firebase_connection):
     return command
 
 def update_status(firebase_connection, msg: str):
+    print('updating firebase status to {}'.format(msg))
     firebase_connection.put('', 'status', msg)
 
 def build_command_from_str(command):
@@ -197,11 +198,12 @@ def main():
     radio = get_radio()
     exception_counter = 0
     previous_door_status = ''
+    command = ''
 
     while True:
         try:
             print('Looking for commands...')
-            commands = get_command(mailbox)
+            command = get_command(mailbox)
         except:
             print('Handling execption........')
             exception_counter += 1
@@ -214,11 +216,11 @@ def main():
             else:
                 continue
                 
-        print('Received {} commands: {}'.format(len(commands), commands))
+        print('Received {} commands: {}'.format(len(command), command))
 
         # Parse commands and execute commands
-        #for command in commands:
-        process_command(commands, mailbox, radio)
+        if command:
+            process_command(command, mailbox, radio)
 
         # Get the current door status
         current_door_status = ''
@@ -229,20 +231,11 @@ def main():
             current_door_status = check_door_status(mailbox, radio, update_user=False)
         msg = ''
 
-        if current_door_status == 'open' and previous_door_status == 'closed':
-            #msg = 'Door was opened at {}'.format(datetime.datetime.now())
-            msg = 'open'
-        elif current_door_status == 'closed' and previous_door_status == 'open':
-            #msg = 'Door was closed at {}'.format(datetime.datetime.now())
-            msg = 'closed'
-        elif num_attempts >= max_attempts:
-            msg = 'Raspi is having trouble getting garage door status.'
+        previous_door_status = mailbox.get('status', None)
 
-        if msg:
-            update_status(mailbox, msg)
-
-        if current_door_status:
-            previous_door_status = current_door_status
+        if current_door_status != previous_door_status:
+            update_status(mailbox, current_door_status)
+            
 
         print('-----------------------------------------\n')
         time.sleep(5)
