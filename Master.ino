@@ -47,9 +47,9 @@ struct Command {
 
 // --------------------- Function Definitions ------------------------
 
-float calculateAverage(float array[], int arrayLength) {
+double calculateAverage(float array[], int arrayLength) {
     // Calculate the average of a given array
-    float sum;
+    double sum;
     for (int i=0; i<arrayLength; i++) {
         sum = sum + array[i];
     }
@@ -57,7 +57,7 @@ float calculateAverage(float array[], int arrayLength) {
     return sum/arrayLength;
 }
 
-float calculateDistance() {
+double calculateDistance() {
     // Clear the trigPin
     digitalWrite(trigPin, LOW);
     delay(2);
@@ -82,7 +82,7 @@ float calculateDistance() {
   return calculateAverage(distance, sampleCount);
 }
 
-char isGarageDoorClosed() {
+bool isGarageDoorClosed() {
     // Check the current status of the grage door
     // true indicates a closed door
 
