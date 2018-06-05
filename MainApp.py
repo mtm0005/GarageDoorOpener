@@ -49,9 +49,14 @@ def get_radio():
     radio.printDetails()
     return radio
 
-def get_commands(firebase_connection):
+def get_command(firebase_connection):
     # TODO: add error handling
-    return firebase_connection.get('command', None)
+    command = firebase_connection.get('command', None)
+
+    # Clear the command field on firebase so that the App
+    # knows it has been received.
+    firebase_connection.put('', 'command', '')
+    return command
 
 def update_status(firebase_connection, msg: str):
     firebase_connection.put('', 'status', msg)
@@ -100,7 +105,7 @@ def send_arduino_command(radio, command, timeout=5.0):
     return response
 
 
-def get_for_response(radio, timeout=5.0):
+def wait_for_response(radio, timeout=5.0):
     print('Waiting for response...')
     radio.startListening()
     start_time = time.time()
@@ -141,7 +146,7 @@ def check_door_status(mailbox, radio, update_user=True):
     print('Received ack: {}'.format(ack))
 
     if ack.split(',')[2].strip() == 'ack':
-        response = get_for_response(radio)
+        response = wait_for_response(radio)
         print('Received response: {}'.format(response))
     else:
         response = ack
@@ -163,7 +168,7 @@ def open_door(mailbox, radio):
     ack = send_arduino_command(radio, 'openDoor, 1{}'.format(num_open_cmds))
     num_open_cmds += 1
     print('Received ack: {}'.format(ack))
-    response = get_for_response(radio, timeout=45.0)
+    response = wait_for_response(radio, timeout=45.0)
     print('Received response: {}'.format(response))
 
 def close_door(mailbox, radio):
@@ -171,16 +176,16 @@ def close_door(mailbox, radio):
     ack = send_arduino_command(radio, 'closeDoor, 2{}'.format(num_close_cmds))
     num_close_cmds += 1
     print('Received ack: {}'.format(ack))
-    response = get_for_response(radio, timeout=45.0)
+    response = wait_for_response(radio, timeout=45.0)
     print('Received response: {}'.format(response))
 
 def process_command(command, mailbox, radio):
     print('Processing command: {}'.format(command))
-    if command == 'CheckDoorStatus':
+    if command == 'checkDoorStatus':
         check_door_status(mailbox, radio)
-    elif command == 'OpenDoor':
+    elif command == 'openDoor':
         open_door(mailbox, radio)
-    elif command == 'CloseDoor':
+    elif command == 'closeDoor':
         close_door(mailbox, radio)
     else:
         print('Recieved invalid command: {}'.format(command))
@@ -196,12 +201,12 @@ def main():
     while True:
         try:
             print('Looking for commands...')
-            commands = get_commands(mailbox)
+            commands = get_command(mailbox)
         except:
             print('Handling execption........')
             exception_counter += 1
             with open('errors.txt', 'a') as error_file:
-                error_file.write('Exception was triggered during get_commands\n')
+                error_file.write('Exception was triggered during get_command\n')
                 error_file.write(str(sys.exc_info()[0]))
                 error_file.write('\n-----------------------------------------\n')
             if exception_counter > 2:
@@ -212,8 +217,8 @@ def main():
         print('Received {} commands: {}'.format(len(commands), commands))
 
         # Parse commands and execute commands
-        for command in commands:
-            process_command(command, mailbox, radio)
+        #for command in commands:
+        process_command(commands, mailbox, radio)
 
         # Get the current door status
         current_door_status = ''
@@ -225,9 +230,11 @@ def main():
         msg = ''
 
         if current_door_status == 'open' and previous_door_status == 'closed':
-            msg = 'Door was opened at {}'.format(datetime.datetime.now())
+            #msg = 'Door was opened at {}'.format(datetime.datetime.now())
+            msg = 'open'
         elif current_door_status == 'closed' and previous_door_status == 'open':
-            msg = 'Door was closed at {}'.format(datetime.datetime.now())
+            #msg = 'Door was closed at {}'.format(datetime.datetime.now())
+            msg = 'closed'
         elif num_attempts >= max_attempts:
             msg = 'Raspi is having trouble getting garage door status.'
 
@@ -238,6 +245,6 @@ def main():
             previous_door_status = current_door_status
 
         print('-----------------------------------------\n')
-        time.sleep(10)
+        time.sleep(5)
 
 main()
