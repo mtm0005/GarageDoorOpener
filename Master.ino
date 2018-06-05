@@ -17,6 +17,8 @@ const int echoPin = 3;
 const int garageDoorOpener = 5;
 RF24 radio(7, 8);
 
+unsigned long startTime;
+
 // Number of samples used to check door status
 int sampleCount = 10;
 
@@ -29,6 +31,7 @@ int garageDelay = 15000;
 
 // Times to try toggleGarageDoor
 const int ITERATIONATTEMPTS = 3;
+const int ARDUINORESETTIMER = 1000*60*5;
 const String OPENDOOR = "openDoor";
 const String CLOSEDOOR = "closeDoor";
 const String CHECKSTATUS = "checkStatus";
@@ -47,9 +50,12 @@ struct Command {
 
 // --------------------- Function Definitions ------------------------
 
-float calculateAverage(float array[], int arrayLength) {
+// Define reset function for Arduino reset
+void(* resetFunc) (void) = 0;
+
+double calculateAverage(float array[], int arrayLength) {
     // Calculate the average of a given array
-    float sum;
+    double sum;
     for (int i=0; i<arrayLength; i++) {
         sum = sum + array[i];
     }
@@ -57,7 +63,7 @@ float calculateAverage(float array[], int arrayLength) {
     return sum/arrayLength;
 }
 
-float calculateDistance() {
+double calculateDistance() {
     // Clear the trigPin
     digitalWrite(trigPin, LOW);
     delay(2);
@@ -82,7 +88,7 @@ float calculateDistance() {
   return calculateAverage(distance, sampleCount);
 }
 
-char isGarageDoorClosed() {
+bool isGarageDoorClosed() {
     // Check the current status of the grage door
     // true indicates a closed door
 
@@ -118,8 +124,12 @@ void toggleGarageDoor() {
 bool garageDoorCommand(String desiredStatus) {
     // returns true if the garageDoorCommand was executed successfully
     for (int i=0; i<ITERATIONATTEMPTS; i++) {
-        Serial.print("toggleGarageDoor: iteration ");
-        Serial.println(i+1);
+
+        if (i>0) {
+            Serial.print("toggleGarageDoor: iteration ");
+            Serial.println(i+1);
+        }
+
         toggleGarageDoor();
         
         delay(garageDelay);
@@ -133,7 +143,7 @@ bool garageDoorCommand(String desiredStatus) {
             return true;
         }
     }
-    Serial.println("Tad can suck a dick because the code TIMED OUT");
+    Serial.println("garageDoorCommand exceeded max attempts");
     return false;
 }
 
@@ -199,8 +209,7 @@ void sendMessage(String command, int ID, String message) {
     String response = command + ", " + idString + ", " + message;
     bool sendSuccess = radio.write(response.c_str(), strlen(response.c_str()));
     if (sendSuccess) {
-        Serial.println("Response sent");
-        Serial.print("response: ");
+        Serial.println("Response sent: ");
         Serial.println(response);
     }
     else {
@@ -302,6 +311,9 @@ void setup() {
     Serial.println("Arduino ready");
 
     radio.startListening();
+
+    // Initialize startTime
+    startTime = millis();
 }
 
 void loop() {
@@ -312,5 +324,21 @@ void loop() {
         handleCommand(readMessage());
 
         radio.startListening();
+        // Reset timer startTime
+        startTime = millis();
+    }
+    // If time without message exceeds ARDUINORESETTIMER
+    else if (millis() - startTime > ARDUINORESETTIMER) {
+
+        Serial.println("Arduino will reset in...");
+        delay(1000);
+        Serial.println("3..");
+        delay(1000);
+        Serial.println("2..");
+        delay(1000);
+        Serial.println("1..");
+        delay(1000);
+
+        resetFunc();
     }
 }
