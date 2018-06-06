@@ -1,16 +1,10 @@
 #! /usr/local/bin/python3
 
 import datetime
-import email
-import getpass
-import imaplib
 import RPi.GPIO as GPIO
 import spidev
-import smtplib
 import sys
 import time
-
-from email.mime.text import MIMEText
 
 from lib_nrf24 import NRF24
 
@@ -134,7 +128,7 @@ def wait_for_response(radio, timeout=5.0):
     return response
         
 
-def check_door_status(mailbox, radio, update_user=True):
+def check_door_status(firebase_connection, radio, update_user=True):
     global num_check_cmds
     ack = send_arduino_command(radio, 'checkStatus, 3{}'.format(num_check_cmds))
     num_check_cmds +=1
@@ -152,19 +146,17 @@ def check_door_status(mailbox, radio, update_user=True):
     else:
         response = ack
 
-    # Email response back to the user.
-
     status = ''
 
     if response:
         status = response.split(',')[2]
 
     if update_user:
-        update_status(mailbox, status)
+        update_status(firebase_connection, status)
 
     return status.strip()
 
-def open_door(mailbox, radio):
+def open_door(radio):
     global num_open_cmds
     ack = send_arduino_command(radio, 'openDoor, 1{}'.format(num_open_cmds))
     num_open_cmds += 1
@@ -172,7 +164,7 @@ def open_door(mailbox, radio):
     response = wait_for_response(radio, timeout=45.0)
     print('Received response: {}'.format(response))
 
-def close_door(mailbox, radio):
+def close_door(radio):
     global num_close_cmds
     ack = send_arduino_command(radio, 'closeDoor, 2{}'.format(num_close_cmds))
     num_close_cmds += 1
@@ -180,20 +172,20 @@ def close_door(mailbox, radio):
     response = wait_for_response(radio, timeout=45.0)
     print('Received response: {}'.format(response))
 
-def process_command(command, mailbox, radio):
+def process_command(command, firebase_connection, radio):
     print('Processing command: {}'.format(command))
     if command == 'checkDoorStatus':
-        check_door_status(mailbox, radio)
+        check_door_status(firebase_connection, radio)
     elif command == 'openDoor':
-        open_door(mailbox, radio)
+        open_door(radio)
     elif command == 'closeDoor':
-        close_door(mailbox, radio)
+        close_door(radio)
     else:
         print('Recieved invalid command: {}'.format(command))
 
 def main():
     print('Setting up firebase')
-    mailbox = get_firebase_connection()
+    firebase_connection = get_firebase_connection()
     print('Setting up radio')
     radio = get_radio()
     exception_counter = 0
@@ -203,7 +195,7 @@ def main():
     while True:
         try:
             print('Looking for commands...')
-            command = get_command(mailbox)
+            command = get_command(firebase_connection)
         except:
             print('Handling execption........')
             exception_counter += 1
@@ -220,7 +212,7 @@ def main():
 
         # Parse commands and execute commands
         if command:
-            process_command(command, mailbox, radio)
+            process_command(command, firebase_connection, radio)
 
         # Get the current door status
         current_door_status = ''
@@ -228,13 +220,12 @@ def main():
         num_attempts = 0
         while ((not current_door_status) and (num_attempts < max_attempts)):
             num_attempts += 1
-            current_door_status = check_door_status(mailbox, radio, update_user=False)
-        msg = ''
+            current_door_status = check_door_status(firebase_connection, radio, update_user=False)
 
-        previous_door_status = mailbox.get('status', None)
+        previous_door_status = firebase_connection.get('status', None)
 
         if current_door_status != previous_door_status:
-            update_status(mailbox, current_door_status)
+            update_status(firebase_connection, current_door_status)
             
 
         print('-----------------------------------------\n')
