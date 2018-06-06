@@ -1,6 +1,7 @@
 #! /usr/local/bin/python3
 
 import datetime
+import pyfcm
 import RPi.GPIO as GPIO
 import spidev
 import sys
@@ -11,6 +12,7 @@ from lib_nrf24 import NRF24
 from firebase import firebase
 
 FIREBASE_URL = 'https://garagedoortest-731f7.firebaseio.com/'
+API_KEY = 'AIzaSyC9qjcqNPZsUOUU0fBTTV5b5I1GT89oxb4'
 
 num_open_cmds = 0
 num_close_cmds = 0
@@ -55,6 +57,23 @@ def get_command(firebase_connection):
 def update_status(firebase_connection, msg: str):
     print('updating firebase status to {}'.format(msg))
     firebase_connection.put('', 'status', msg)
+
+def send_fcm_notification(msg_title: str, msg_body: str, device_id: str):
+    push_service = pyfcm.FCMNotification(api_key=API_KEY)
+    device_id = 'device {}'.format(device_id)
+    result = push_service.notify_single_device(registration_id=device_id,
+        message_title=msg_title, message_body=msg_body)
+
+    if not result['success']:
+        with open('notification_failures.txt', 'a') as errors_file:
+            errors_file.write('Notification failure occurred at {}\n'.format(datetime.datetime.now()))
+            errors_file.write('Attempted to send msg_title: {}\n'.format(msg_title))
+            errors_file.write('               and msg_body: {}\n'.format(msg_body))
+            errors_file.write('to device: {}\n'.format(device_id))
+            errors_file.write('with api_key: {}\n'.format(API_KEY))
+            errors_file.write('\n-------------------------------------------------\n')
+
+    return result
 
 def build_command_from_str(command):
     cmd_msg = list(command)
@@ -186,6 +205,7 @@ def process_command(command, firebase_connection, radio):
 def main():
     print('Setting up firebase')
     firebase_connection = get_firebase_connection()
+    device_id = firebase_connection.get('device ID', None)
     print('Setting up radio')
     radio = get_radio()
     exception_counter = 0
@@ -226,6 +246,12 @@ def main():
 
         if current_door_status != previous_door_status:
             update_status(firebase_connection, current_door_status)
+            msg_body = 'Door status has changed to {}'.format(current_door_status)
+            msg_title = 'Garage door update'
+            result = send_fcm_notification(msg_title, msg_body, device_id)
+            if result['failure']:
+                print('Updating the device ID due to notification failure.')
+                device_id = firebase_connection.get('device ID', None)
             
 
         print('-----------------------------------------\n')
