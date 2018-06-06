@@ -229,6 +229,6 @@ def main():
             
 
         print('-----------------------------------------\n')
-        time.sleep(5)
+        time.sleep(1)
 
 main()
