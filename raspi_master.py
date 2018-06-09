@@ -148,8 +148,8 @@ def main():
         current_door_state = check_door_status()
         if current_door_state != previous_door_state:
             previous_door_state = current_door_state
-            notify_user(firebase_connection, current_door_state)
             update_status(firebase_connection, current_door_state)
+            notify_user(firebase_connection, current_door_state)
 
         time.sleep(1)
 
