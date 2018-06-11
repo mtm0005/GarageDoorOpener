@@ -29,7 +29,7 @@ class ValidCommands(Enum):
     closeDoor = 3
 
 def print_with_timestamp(msg):
-    print('{} - {}'.format(msg, datetime.datetime.now()))
+    print('{} - {}'.format(datetime.datetime.now(), msg))
 
 def setup_gpio():
     GPIO.setmode(GPIO.BOARD)
