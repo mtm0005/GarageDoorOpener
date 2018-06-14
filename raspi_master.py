@@ -3,6 +3,7 @@ import os
 import pyfcm
 import RPi.GPIO as GPIO
 import time
+import traceback
 
 from enum import Enum
 from firebase import firebase
@@ -166,17 +167,18 @@ if __name__ == '__main__':
         GPIO.cleanup()
         print_with_timestamp('exception occurred')
         print(e)
-        print(e.with_traceback())
+        print(traceback.print_exc())
 
         # Create a new diretory call current date.
         current_date = datetime.date.today().strftime('%m_%d_%Y')
-        if not os.path.isdir(current_date):
-            os.mkdir(current_date)
+        dir_path = '/home/pi/{}'.format(current_date)
+        if not os.path.isdir(dir_path):
+            os.mkdir(dir_path)
 
         # Create a new file in that directory called the
         # current time.
         current_time = datetime.datetime.now().strftime('%H_%M_%S')
-        with open('{}/{}.txt'.format(current_date, current_time), 'w') as error_file:
+        with open('/home/pi/{}/{}.txt'.format(current_date, current_time), 'w') as error_file:
             # Write the traceback and the exception to that file.
             error_file.write('{}\n'.format(e))
-            error_file.write('{}\n'.format(e.with_traceback()))
+            error_file.write('{}\n'.format(traceback.print_exc()))
