@@ -176,7 +176,7 @@ if __name__ == '__main__':
         # Create a new file in that directory called the
         # current time.
         current_time = datetime.datetime.now().strftime('%H_%M_%S')
-        with open('{}/{}.txt'.format(current_date, current_time)) as error_file:
+        with open('{}/{}.txt'.format(current_date, current_time), 'w') as error_file:
             # Write the traceback and the exception to that file.
             error_file.write('{}\n'.format(e))
             error_file.write('{}\n'.format(e.with_traceback()))
