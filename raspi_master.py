@@ -1,4 +1,5 @@
 import datetime
+import os
 import pyfcm
 import RPi.GPIO as GPIO
 import time
@@ -161,7 +162,21 @@ if __name__ == '__main__':
         main()
         print_with_timestamp('returned from main')
         GPIO.cleanup()
-    except Exception as e:
+    except BaseException as e:
+        GPIO.cleanup()
         print_with_timestamp('exception occurred')
         print(e)
-        GPIO.cleanup()
+        print(e.with_traceback())
+
+        # Create a new diretory call current date.
+        current_date = datetime.date.today().strftime('%m_%d_%Y')
+        if not os.path.isdir(current_date):
+            os.mkdir(current_date)
+
+        # Create a new file in that directory called the
+        # current time.
+        current_time = datetime.datetime.now().strftime('%H_%M_%S')
+        with open('{}/{}.txt'.format(current_date, current_time)) as error_file:
+            # Write the traceback and the exception to that file.
+            error_file.write('{}\n'.format(e))
+            error_file.write('{}\n'.format(e.with_traceback()))
