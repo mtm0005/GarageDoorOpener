@@ -2,6 +2,7 @@ import datetime
 import os
 import pyfcm
 import RPi.GPIO as GPIO
+import subprocess
 import time
 import traceback
 
@@ -38,6 +39,10 @@ def get_door_state_from_str(door_state_string: str):
         return DoorState.closed
     else:
         return DoorState.unknown
+
+def git_pull():
+    raw_output = subprocess.check_output('git pull'.split())
+    return raw_output.decode('ascii')
 
 def print_with_timestamp(msg):
     print('{} - {}'.format(datetime.datetime.now(), msg))
@@ -172,7 +177,11 @@ def main():
             update_status(firebase_connection, current_door_state)
             notify_user(firebase_connection, current_door_state)
 
-        time.sleep(1)
+        # Exit if there is an update.
+        if git_pull() != 'Already up-to-date.\n':
+            return 0
+
+        time.sleep(0.5)
 
 if __name__ == '__main__':
     try:
