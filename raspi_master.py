@@ -16,7 +16,7 @@ GARAGE_DOOR_PIN = 11
 FIREBASE_URL = 'https://garagedoortest-731f7.firebaseio.com/'
 API_KEY = 'AIzaSyC9qjcqNPZsUOUU0fBTTV5b5I1GT89oxb4'
 
-MAX_CLOSED_DOOR_DISTANCE_CM = 91 # Just under 3 feet
+MAX_CLOSED_DOOR_DISTANCE_CM = 91 # Just below 3 feet
 
 class DoorState(Enum):
     open = 1
@@ -185,7 +185,7 @@ def main():
 
         # Exit if there is an update.
         if git_pull() != 'Already up-to-date.\n':
-            log_info('Going down for update...')
+            log_info('Going down for update')
             return 0
 
         time.sleep(0.5)
