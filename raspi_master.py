@@ -56,6 +56,9 @@ def get_command(firebase_connection):
 
     return command
 
+def get_status(firebase_connection):
+    return firebase_connection.get('status', None)
+
 def get_distance_from_sensor_in_cm():
     distance_sum = 0
     num_samples = 10
@@ -143,7 +146,11 @@ def notify_user(firebase_connection, status: DoorState):
 def main():
     setup_gpio()
     firebase_connection = get_firebase_connection()
-    previous_door_state = DoorState.unknown
+    
+    previous_door_state = get_status(firebase_connection)
+    if not previous_door_state:
+        previous_door_state = DoorState.unknown
+
     while True:
         command = get_command(firebase_connection)
         if command:
