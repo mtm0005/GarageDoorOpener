@@ -30,6 +30,15 @@ class ValidCommands(Enum):
     openDoor = 2
     closeDoor = 3
 
+def get_door_state_from_str(door_state_string: str):
+    door_state_string = door_state_string.strip().lower()
+    if (door_state_string == 'open'):
+        return DoorState.open
+    elif (door_state_string == 'closed'):
+        return DoorState.closed
+    else:
+        return DoorState.unknown
+
 def print_with_timestamp(msg):
     print('{} - {}'.format(datetime.datetime.now(), msg))
 
@@ -148,7 +157,7 @@ def main():
     setup_gpio()
     firebase_connection = get_firebase_connection()
     
-    previous_door_state = get_status(firebase_connection)
+    previous_door_state = get_door_state_from_str(get_status(firebase_connection))
     if not previous_door_state:
         previous_door_state = DoorState.unknown
 
