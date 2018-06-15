@@ -41,6 +41,10 @@ def get_door_state_from_str(door_state_string: str):
         return DoorState.unknown
 
 def git_pull():
+    # Move to the project path.
+    project_path = os.path.realpath(os.path.dirname(__file__))
+    os.chdir(project_path)
+
     raw_output = subprocess.check_output('git pull'.split())
     return raw_output.decode('ascii')
 
