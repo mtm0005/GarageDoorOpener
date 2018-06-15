@@ -159,6 +159,8 @@ def notify_user(firebase_connection, status: DoorState):
     return result
 
 def main():
+    log_info('Program started')
+
     setup_gpio()
     firebase_connection = get_firebase_connection()
     
@@ -179,9 +181,28 @@ def main():
 
         # Exit if there is an update.
         if git_pull() != 'Already up-to-date.\n':
+            log_info('Going down for update...')
             return 0
 
         time.sleep(0.5)
+
+# TO-DO: Write the current version at the top of each file.
+def log_info(msg, exception=None):
+    # Create a new diretory call current date.
+    current_date = datetime.date.today().strftime('%m_%d_%Y')
+    dir_path = '/home/pi/{}'.format(current_date)
+    if not os.path.isdir(dir_path):
+        os.mkdir(dir_path)
+
+    # Create a new file in that directory called the
+    # current time.
+    current_time = datetime.datetime.now().strftime('%H_%M_%S')
+    with open('/home/pi/{}/{}.txt'.format(current_date, current_time), 'w') as log_file:
+        # Write the message and the exception to that file.
+        log_file.write('{}\n'.format(msg))
+        if exception:
+            log_file.write('{}\n'.format(exception))
+            log_file.write('{}\n'.format(traceback.print_exc()))
 
 if __name__ == '__main__':
     try:
@@ -191,19 +212,4 @@ if __name__ == '__main__':
     except BaseException as e:
         GPIO.cleanup()
         print_with_timestamp('exception occurred')
-        print(e)
-        print(traceback.print_exc())
-
-        # Create a new diretory call current date.
-        current_date = datetime.date.today().strftime('%m_%d_%Y')
-        dir_path = '/home/pi/{}'.format(current_date)
-        if not os.path.isdir(dir_path):
-            os.mkdir(dir_path)
-
-        # Create a new file in that directory called the
-        # current time.
-        current_time = datetime.datetime.now().strftime('%H_%M_%S')
-        with open('/home/pi/{}/{}.txt'.format(current_date, current_time), 'w') as error_file:
-            # Write the traceback and the exception to that file.
-            error_file.write('{}\n'.format(e))
-            error_file.write('{}\n'.format(traceback.print_exc()))
+        log_info('exception occurred', e)
