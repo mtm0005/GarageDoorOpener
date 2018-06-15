@@ -181,7 +181,7 @@ def main():
 
         # Exit if there is an update.
         if git_pull() != 'Already up-to-date.\n':
-            log_info('Going down for update...')
+            log_info('Going down for update')
             return 0
 
         time.sleep(0.5)
