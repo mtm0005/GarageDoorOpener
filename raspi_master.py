@@ -71,7 +71,7 @@ def get_status(firebase_connection):
 
 def get_distance_from_sensor_in_cm():
     distance_sum = 0
-    num_samples = 10
+    num_samples = 20
     for i in range(num_samples):
         GPIO.output(TRIG_PIN, 1)
         time.sleep(0.00001)
