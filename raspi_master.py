@@ -15,6 +15,7 @@ GARAGE_DOOR_PIN = 11
 
 FIREBASE_URL = 'https://garagedoortest-731f7.firebaseio.com/'
 API_KEY = 'AIzaSyC9qjcqNPZsUOUU0fBTTV5b5I1GT89oxb4'
+BASE_LOG_DIR = '/home/pi/log_files'
 
 MAX_CLOSED_DOOR_DISTANCE_CM = 170 # About 5.5ft
 
@@ -142,6 +143,7 @@ def process_command(firebase_connection, command):
         close_door()
     else:
         print_with_timestamp('invalid command')
+        log_info('processed-invalid-command', data=command)
 
 def notify_user(firebase_connection, status: DoorState):
     print_with_timestamp('Sending notification to user')
@@ -152,18 +154,25 @@ def notify_user(firebase_connection, status: DoorState):
 
     if not result['success']:
         print_with_timestamp('notification failed to send')
-        with open('notification_failures.txt', 'a') as errors_file:
-            errors_file.write('Notification failure occurred at {}\n'.format(datetime.datetime.now()))
-            errors_file.write('Attempted to send msg_title: Garage door update\n')
-            errors_file.write('               and msg_body: {}\n'.format(status.name))
-            errors_file.write('to device: {}\n'.format(device_id))
-            errors_file.write('with api_key: {}\n'.format(API_KEY))
-            errors_file.write('\n-------------------------------------------------\n')
+        log_info('notification-failure', data=status.name)
 
     return result
 
+# TO-DO: Add software version to each message.
+def log_info(group: str, data=None):
+    # Make sure the BASE_LOG_DIR exists
+    if not os.path.isdir(BASE_LOG_DIR):
+        os.mkdir(BASE_LOG_DIR)
+
+    current_time = datetime.datetime.now().strftime('%H_%M_%S')
+    current_date = datetime.date.today().strftime('%Y_%m_%d')
+    file_path = '{}/{}.txt'.format(BASE_LOG_DIR, current_date)
+    with open(file_path, 'a') as log_file:
+        # Write the message and the exception to that file.
+        log_file.write('{} | {} | {}\n'.format(current_time, group, data))
+
 def main():
-    log_info('Program started')
+    log_info('bootup')
 
     setup_gpio()
     firebase_connection = get_firebase_connection()
@@ -185,28 +194,10 @@ def main():
 
         # Exit if there is an update.
         if git_pull() != 'Already up-to-date.\n':
-            log_info('Going down for update')
+            log_info('update')
             return 0
 
         time.sleep(0.5)
-
-# TO-DO: Write the current version at the top of each file.
-def log_info(msg, exception=None):
-    # Create a new diretory call current date.
-    current_date = datetime.date.today().strftime('%m_%d_%Y')
-    dir_path = '/home/pi/{}'.format(current_date)
-    if not os.path.isdir(dir_path):
-        os.mkdir(dir_path)
-
-    # Create a new file in that directory called the
-    # current time.
-    current_time = datetime.datetime.now().strftime('%H_%M_%S')
-    with open('/home/pi/{}/{}.txt'.format(current_date, current_time), 'w') as log_file:
-        # Write the message and the exception to that file.
-        log_file.write('{}\n'.format(msg))
-        if exception:
-            log_file.write('{}\n'.format(exception))
-            log_file.write('{}\n'.format(traceback.print_exc()))
 
 if __name__ == '__main__':
     try:
@@ -216,4 +207,4 @@ if __name__ == '__main__':
     except BaseException as e:
         GPIO.cleanup()
         print_with_timestamp('exception occurred')
-        log_info('exception occurred', e)
+        log_info('exception', data=e)
