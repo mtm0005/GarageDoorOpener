@@ -1,4 +1,5 @@
 import datetime
+import math
 import os
 import pyfcm
 import RPi.GPIO as GPIO
@@ -16,6 +17,7 @@ GARAGE_DOOR_PIN = 11
 FIREBASE_URL = 'https://garagedoortest-731f7.firebaseio.com/'
 API_KEY = 'AIzaSyC9qjcqNPZsUOUU0fBTTV5b5I1GT89oxb4'
 BASE_LOG_DIR = '/home/pi/log_files'
+SETTINGS_DIR = '/home/pi/settings'
 
 MAX_CLOSED_DOOR_DISTANCE_CM = 170 # About 5.5ft
 
@@ -31,6 +33,58 @@ class ValidCommands(Enum):
     checkDoorStatus = 1
     openDoor = 2
     closeDoor = 3
+
+def calibrate():
+    reading_diff_limit = 0.05 # Subsequent readings must be within 5% of each other
+    initial_diff_limit = 0.5 # New reading must be at least 50% different from initial reading
+
+    # Take current reading
+    first_reading = get_distance_from_sensor_in_cm()
+    time.sleep(.5)
+
+    # Toggle garage door state
+    toggle_door_state()
+
+    # Check reading until value changes
+    reading_diff = 100
+    initial_diff = 0
+    prev_reading = first_reading
+    while reading_diff > reading_diff_limit and initial_diff < initial_diff_limit:
+        new_reading = get_distance_from_sensor_in_cm()
+
+        reading_diff = (new_reading - prev_reading)/prev_reading
+        initial_diff = (new_reading - first_reading)/first_reading
+        time.sleep(1)
+
+    # Set threshold as average of two readings
+    temporary_threshold = math.fabs((new_reading - first_reading)/2)
+
+    # TO-DO: verify this comparator is correct for the raspberry pi location
+    if new_reading >= temporary_threshold:
+        prev_state = DoorState.open
+    else:
+        prev_state = DoorState.closed
+
+    toggle_door_state()
+
+    new_state = prev_state
+    start_time = time.time()
+    while new_state != prev_state:
+        time_diff = time.time() - start_time
+
+        reading = get_distance_from_sensor_in_cm()
+        # TO-DO: verify this comparator is correct for the raspberry pi location
+        if reading >= temporary_threshold:
+            new_state = DoorState.open
+        else:
+            new_state = DoorState.closed
+
+        # If exceed timeout, calibrate failed
+        if time_diff > 30:
+            return -1
+        time.sleep(2)
+
+    return temporary_threshold
 
 def get_door_state_from_str(door_state_string: str):
     door_state_string = door_state_string.strip().lower()
@@ -173,6 +227,8 @@ def log_info(group: str, data=None):
 
 def main():
     log_info('bootup')
+
+    #TO-DO: Check if threshold file is created or set default threshold
 
     setup_gpio()
     firebase_connection = get_firebase_connection()
