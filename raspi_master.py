@@ -134,7 +134,7 @@ def get_firebase_connection():
     return firebase.FirebaseApplication(FIREBASE_URL)
 
 def get_command(firebase_connection):
-    command = firebase_connection.get('door-{}.command'.format(RASPI_SERIAL_NUM), None)
+    command = firebase_connection.get('door-{}/command'.format(RASPI_SERIAL_NUM), None)
 
     if command:
         # Clear the command field on firebase so that the App knows it has
@@ -145,7 +145,7 @@ def get_command(firebase_connection):
     return command
 
 def get_status(firebase_connection):
-    return firebase_connection.get('door-{}.status'.format(RASPI_SERIAL_NUM), None)
+    return firebase_connection.get('door-{}/status'.format(RASPI_SERIAL_NUM), None)
 
 def get_distance_from_sensor_in_cm():
     distance_sum = 0
