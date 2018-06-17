@@ -34,6 +34,19 @@ class ValidCommands(Enum):
     openDoor = 2
     closeDoor = 3
 
+def get_serial():
+    # Extract serial from cpuinfo file
+    cpuserial = '0000000000000000'
+    try:
+        with open('/proc/cpuinfo','r') as f:
+            for line in f:
+                if line[0:6]=='Serial':
+                    cpuserial = line[10:26]
+    except:
+        cpuserial = 'ERROR000000000'
+
+    return cpuserial
+
 def calibrate():
     reading_diff_limit = 0.05 # Subsequent readings must be within 5% of each other
     initial_diff_limit = 0.5 # New reading must be at least 50% different from initial reading
