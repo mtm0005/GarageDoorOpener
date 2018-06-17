@@ -20,6 +20,7 @@ BASE_LOG_DIR = '/home/pi/log_files'
 SETTINGS_DIR = '/home/pi/settings'
 
 MAX_CLOSED_DOOR_DISTANCE_CM = 170 # About 5.5ft
+RASPI_SERIAL_NUM = None
 
 class DoorState(Enum):
     open = 1
@@ -133,18 +134,18 @@ def get_firebase_connection():
     return firebase.FirebaseApplication(FIREBASE_URL)
 
 def get_command(firebase_connection):
-    command = firebase_connection.get('command', None)
+    command = firebase_connection.get('door-{}.command'.format(RASPI_SERIAL_NUM), None)
 
     if command:
         # Clear the command field on firebase so that the App knows it has
         # been received.
-        firebase_connection.put('', 'command', '')
+        firebase_connection.put('door-{}'.format(RASPI_SERIAL_NUM), 'command', '')
         print_with_timestamp('Received command: {}'.format(command))
 
     return command
 
 def get_status(firebase_connection):
-    return firebase_connection.get('status', None)
+    return firebase_connection.get('door-{}.status'.format(RASPI_SERIAL_NUM), None)
 
 def get_distance_from_sensor_in_cm():
     distance_sum = 0
@@ -225,7 +226,8 @@ def process_command(firebase_connection, command):
 def notify_user(firebase_connection, status: DoorState):
     print_with_timestamp('Sending notification to user')
     push_service = pyfcm.FCMNotification(api_key=API_KEY)
-    device_id = 'device {}'.format(firebase_connection.get('device ID', None))
+    device_id = 'device {}'.format(
+        firebase_connection.get('door-{}.device ID'.format(RASPI_SERIAL_NUM), None))
     result = push_service.notify_single_device(registration_id=device_id,
         message_title='Garage door update', message_body=status.name)
 
@@ -251,9 +253,12 @@ def log_info(group: str, data=None):
 def main():
     log_info('bootup')
 
-    #TO-DO: Check if threshold file is created or set default threshold
+    # TO-DO: Check if threshold file is created or set default threshold
     global MAX_CLOSED_DOOR_DISTANCE_CM
     MAX_CLOSED_DOOR_DISTANCE_CM = set_threshold()
+
+    global RASPI_SERIAL_NUM
+    RASPI_SERIAL_NUM = get_serial()
 
     setup_gpio()
     firebase_connection = get_firebase_connection()
