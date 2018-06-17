@@ -176,6 +176,16 @@ def toggle_door_state():
     time.sleep(0.4)
     GPIO.output(GARAGE_DOOR_PIN, 0)
 
+def set_threshold():
+    settings_file = SETTINGS_DIR + '/threshold.txt'
+    if os.path.isfile(settings_file):
+        with open(settings_file, 'r') as threshold_file:
+            # Read variable value from text file
+            file_data = threshold_file.read()
+            return file_data.split()[-1]
+    else:
+        return MAX_CLOSED_DOOR_DISTANCE_CM
+
 def check_door_status():
     distance_in_cm = get_distance_from_sensor_in_cm()
 
@@ -242,6 +252,8 @@ def main():
     log_info('bootup')
 
     #TO-DO: Check if threshold file is created or set default threshold
+    global MAX_CLOSED_DOOR_DISTANCE_CM
+    MAX_CLOSED_DOOR_DISTANCE_CM = set_threshold()
 
     setup_gpio()
     firebase_connection = get_firebase_connection()
