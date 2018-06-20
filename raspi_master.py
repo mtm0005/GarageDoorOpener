@@ -183,7 +183,7 @@ def set_threshold():
         with open(settings_file, 'r') as threshold_file:
             # Read variable value from text file
             file_data = threshold_file.read()
-            return file_data.split()[-1]
+            return float(file_data.split()[-1])
     else:
         return MAX_CLOSED_DOOR_DISTANCE_CM
 
