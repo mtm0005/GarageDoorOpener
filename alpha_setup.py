@@ -30,19 +30,22 @@ def main(cal=True):
             MAX_CLOSED_DOOR_DISTANCE_CM = file_data.split()[-1]
 
 def sensor_reading():
-    prev_reading = get_distance_from_sensor_in_cm()
+    prev_reading = int(get_distance_from_sensor_in_cm())
     while True:
-        new_reading = get_distance_from_sensor_in_cm()
+        new_reading = int(get_distance_from_sensor_in_cm())
         print("{} ------> {}".format(prev_reading, new_reading))
-        percent_diff = math.fabs(new_reading-prev_reading)/prev_reading
+        percent_diff = int(100*math.fabs(new_reading-prev_reading)/prev_reading)
         print('Percentage difference: {}'.format(percent_diff))
+
+        prev_reading = new_reading
         time.sleep(1.5)
 
 if __name__ == '__main__':
     try:
         setup_gpio()
-        main(cal=False)
-
+        #main(cal=False)
+        #sensor_reading()
+        print(calibrate())
         GPIO.cleanup()
     except:
         GPIO.cleanup()
