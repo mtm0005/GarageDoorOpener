@@ -1,7 +1,10 @@
-import os
+import math
+import os 
 import time
 
-from raspi_master import calibrate
+import RPi.GPIO as GPIO
+
+from raspi_master import calibrate, get_distance_from_sensor_in_cm, setup_gpio
 
 SETTINGS_DIR = '/Users/tylersherrod/Desktop/settings'
 
@@ -26,7 +29,20 @@ def main(cal=True):
             file_data = threshold_file.read()
             MAX_CLOSED_DOOR_DISTANCE_CM = file_data.split()[-1]
 
-    
+def sensor_reading():
+    prev_reading = get_distance_from_sensor_in_cm()
+    while True:
+        new_reading = get_distance_from_sensor_in_cm()
+        print("{} ------> {}".format(prev_reading, new_reading))
+        percent_diff = math.fabs(new_reading-prev_reading)/prev_reading
+        print('Percentage difference: {}'.format(percent_diff))
+        time.sleep(1.5)
 
 if __name__ == '__main__':
-    main(cal=False)
+    try:
+        setup_gpio()
+        main(cal=False)
+
+        GPIO.cleanup()
+    except:
+        GPIO.cleanup()

@@ -19,7 +19,9 @@ API_KEY = 'AIzaSyC9qjcqNPZsUOUU0fBTTV5b5I1GT89oxb4'
 BASE_LOG_DIR = '/home/pi/log_files'
 SETTINGS_DIR = '/home/pi/settings'
 
-MAX_CLOSED_DOOR_DISTANCE_CM = 170 # About 5.5ft
+CLOSED_DOOR_DISTANCE_CM = 50
+OPEN_DOOR_DISTANCE_CM = 150
+PERCENTAGE_THRESHOLD = .1 # 10%
 RASPI_SERIAL_NUM = None
 
 class DoorState(Enum):
@@ -66,39 +68,42 @@ def calibrate():
     while reading_diff > reading_diff_limit and initial_diff < initial_diff_limit:
         new_reading = get_distance_from_sensor_in_cm()
 
-        reading_diff = (new_reading - prev_reading)/prev_reading
-        initial_diff = (new_reading - first_reading)/first_reading
+        reading_diff = math.fabs(new_reading - prev_reading)/prev_reading
+        initial_diff = math.fabs(new_reading - first_reading)/first_reading
         time.sleep(1)
 
-    # Set threshold as average of two readings
-    temporary_threshold = math.fabs((new_reading - first_reading)/2)
+    # Set second reading
+    second_reading = new_reading
 
-    # TO-DO: verify this comparator is correct for the raspberry pi location
-    if new_reading >= temporary_threshold:
-        prev_state = DoorState.open
+    # TO-DO: This only applies to a non-mounted setup (i.e. Tad's garage setup)
+    if second_reading > first_reading:
+        open_threshold = second_reading
+        closed_threshold = first_reading
     else:
-        prev_state = DoorState.closed
+        closed_threshold = second_reading
+        open_threshold = first_reading
+
+    first_cal_status = check_door_status(open_threshold, closed_threshold)
 
     toggle_door_state()
 
-    new_state = prev_state
     start_time = time.time()
-    while new_state != prev_state:
-        time_diff = time.time() - start_time
-
-        reading = get_distance_from_sensor_in_cm()
-        # TO-DO: verify this comparator is correct for the raspberry pi location
-        if reading >= temporary_threshold:
-            new_state = DoorState.open
-        else:
-            new_state = DoorState.closed
-
-        # If exceed timeout, calibrate failed
-        if time_diff > 30:
+    while check_door_status(open_threshold, closed_threshold) != first_cal_status:
+        # Set timeout to 30 seconds
+        if time.time() - start_time > 30:
             return -1
-        time.sleep(2)
 
-    return temporary_threshold
+        time.sleep(1)
+
+    if not os.path.isdir(SETTINGS_DIR):
+        os.mkdir(SETTINGS_DIR)
+
+    settings_file = SETTINGS_DIR + '/threshold.txt'    
+    with open(settings_file, 'w') as threshold_file:
+        threshold_file.write('OPEN_DOOR_DISTANCE_CM = {}\nCLOSED_DOOR_DISTANCE_CM = {}'.format(open_threshold, closed_threshold))
+
+    return 0
+
 
 def get_door_state_from_str(door_state_string: str):
     door_state_string = door_state_string.strip().lower()
@@ -182,18 +187,38 @@ def set_threshold():
     if os.path.isfile(settings_file):
         with open(settings_file, 'r') as threshold_file:
             # Read variable value from text file
-            file_data = threshold_file.read()
-            return file_data.split()[-1]
-    else:
-        return MAX_CLOSED_DOOR_DISTANCE_CM
+            file_data = threshold_file.readlines()
 
-def check_door_status():
+        for line in file_data:
+            split_line = line.split('=')
+            key = split_line[0]
+            value = split_line[1]
+            if key == 'OPEN_DOOR_DISTANCE_CM':
+                open_threshold = value
+            elif key == 'CLOSED_DOOR_DISTANCE_CM':
+                closed_threshold = value
+
+            
+        return (open_threshold, closed_threshold)
+    else:
+        return (OPEN_DOOR_DISTANCE_CM, CLOSED_DOOR_DISTANCE_CM)
+
+def check_door_status(open_distance=None, closed_distance=None):
+    
+    if not open_distance:
+        open_distance = OPEN_DOOR_DISTANCE_CM
+
+    if not closed_distance:
+        closed_distance = CLOSED_DOOR_DISTANCE_CM
+
     distance_in_cm = get_distance_from_sensor_in_cm()
 
-    if distance_in_cm > MAX_CLOSED_DOOR_DISTANCE_CM:
-        return DoorState.open
-    else:
+    if math.fabs(distance_in_cm-closed_distance)/closed_distance <= PERCENTAGE_THRESHOLD:
         return DoorState.closed
+    elif math.fabs(distance_in_cm-open_distance)/open_distance <= PERCENTAGE_THRESHOLD:
+        return DoorState.closed
+    else:
+        return DoorState.unknown
 
 def open_door():
     if check_door_status() == DoorState.closed:
@@ -254,8 +279,8 @@ def main():
     log_info('bootup')
 
     # TO-DO: Check if threshold file is created or set default threshold
-    global MAX_CLOSED_DOOR_DISTANCE_CM
-    MAX_CLOSED_DOOR_DISTANCE_CM = set_threshold()
+    global CLOSED_DOOR_DISTANCE_CM, OPEN_DOOR_DISTANCE_CM
+    OPEN_DOOR_DISTANCE_CM, CLOSED_DOOR_DISTANCE_CM = set_threshold()
 
     global RASPI_SERIAL_NUM
     RASPI_SERIAL_NUM = get_serial()
