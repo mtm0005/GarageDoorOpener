@@ -62,7 +62,6 @@ def calibrate():
 
     # Check reading until value changes
     initial_diff = 0
-    prev_reading = first_reading
     while initial_diff < initial_diff_limit:
         time.sleep(5)
         new_reading = get_distance_from_sensor_in_cm()
@@ -70,7 +69,6 @@ def calibrate():
         
         initial_diff = math.fabs(new_reading - first_reading)/first_reading
         print('initial_diff: {}'.format(initial_diff))
-        prev_reading = new_reading
 
     # Set second reading
     second_reading = new_reading
@@ -166,24 +164,42 @@ def get_command(firebase_connection):
 def get_status(firebase_connection):
     return firebase_connection.get('door-{}/status'.format(RASPI_SERIAL_NUM), None)
 
+def get_sensor_reading():
+    GPIO.output(TRIG_PIN, 1)
+    time.sleep(0.00001)
+    GPIO.output(TRIG_PIN, 0)
+
+    start = time.time()
+    while GPIO.input(ECHO_PIN) == 0:
+        if time.time()-start > 1:
+            return
+
+    start = time.time()
+
+    while GPIO.input(ECHO_PIN) == 1:
+        pass
+
+    stop = time.time()
+
+    return stop-start
+
 def get_distance_from_sensor_in_cm():
-    distance_sum = 0
+    distance_sum = []
     num_samples = 20
+    max_attempts = 3
     for i in range(num_samples):
-        GPIO.output(TRIG_PIN, 1)
-        time.sleep(0.00001)
-        GPIO.output(TRIG_PIN, 0)
+        
+        reading = get_sensor_reading
+        attempts = 0
+        while not reading and attempts < max_attempts:
+            reading = get_sensor_reading()
+            attempts += 1
+        
+        if attempts >= max_attempts:
+            log_info('sensor-failure', data='attempts: {}'.format(attempts))
+            raise Exception('sensor failure - max attempts')
 
-        while GPIO.input(ECHO_PIN) == 0:
-            pass
-
-        start = time.time()
-
-        while GPIO.input(ECHO_PIN) == 1:
-            pass
-
-        stop = time.time()
-        distance_sum += stop - start
+        distance_sum.append(reading)
         time.sleep(0.01)
 
     distance_avg = distance_sum/num_samples 
