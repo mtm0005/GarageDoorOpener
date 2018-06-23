@@ -19,7 +19,8 @@ API_KEY = 'AIzaSyC9qjcqNPZsUOUU0fBTTV5b5I1GT89oxb4'
 BASE_LOG_DIR = '/home/pi/log_files'
 SETTINGS_DIR = '/home/pi/settings'
 
-MAX_CLOSED_DOOR_DISTANCE_CM = 170 # About 5.5ft
+CLOSED_DOOR_DISTANCE_CM = 50
+PERCENTAGE_THRESHOLD = 0.1
 RASPI_SERIAL_NUM = None
 
 class DoorState(Enum):
@@ -34,6 +35,7 @@ class ValidCommands(Enum):
     checkDoorStatus = 1
     openDoor = 2
     closeDoor = 3
+    calibrate = 4
 
 def get_serial():
     # Extract serial from cpuinfo file
@@ -49,56 +51,70 @@ def get_serial():
     return cpuserial
 
 def calibrate():
-    reading_diff_limit = 0.05 # Subsequent readings must be within 5% of each other
     initial_diff_limit = 0.5 # New reading must be at least 50% different from initial reading
 
     # Take current reading
     first_reading = get_distance_from_sensor_in_cm()
-    time.sleep(.5)
 
     # Toggle garage door state
+    print('toggle')
     toggle_door_state()
 
     # Check reading until value changes
-    reading_diff = 100
     initial_diff = 0
     prev_reading = first_reading
-    while reading_diff > reading_diff_limit and initial_diff < initial_diff_limit:
+    while initial_diff < initial_diff_limit:
+        time.sleep(5)
         new_reading = get_distance_from_sensor_in_cm()
+        print('Sensor reading: {}'.format(new_reading))
+        
+        initial_diff = math.fabs(new_reading - first_reading)/first_reading
+        print('initial_diff: {}'.format(initial_diff))
+        prev_reading = new_reading
 
-        reading_diff = (new_reading - prev_reading)/prev_reading
-        initial_diff = (new_reading - first_reading)/first_reading
-        time.sleep(1)
+    # Set second reading
+    second_reading = new_reading
 
-    # Set threshold as average of two readings
-    temporary_threshold = math.fabs((new_reading - first_reading)/2)
-
-    # TO-DO: verify this comparator is correct for the raspberry pi location
-    if new_reading >= temporary_threshold:
-        prev_state = DoorState.open
+    if second_reading > first_reading:
+        closed_threshold = first_reading
     else:
-        prev_state = DoorState.closed
+        closed_threshold = second_reading
 
+    print('closed threshold: {}'.format(closed_threshold))
+
+    #print('waiting for door to stop moving')
+    #time.sleep(10)
+
+    first_cal_status = check_door_status(closed_threshold)
+    print('Door status: {}'.format(first_cal_status.name))
+
+    print('toggle')
     toggle_door_state()
 
-    new_state = prev_state
     start_time = time.time()
-    while new_state != prev_state:
-        time_diff = time.time() - start_time
-
-        reading = get_distance_from_sensor_in_cm()
-        # TO-DO: verify this comparator is correct for the raspberry pi location
-        if reading >= temporary_threshold:
-            new_state = DoorState.open
-        else:
-            new_state = DoorState.closed
-
-        # If exceed timeout, calibrate failed
-        if time_diff > 30:
-            return -1
+    current_status = first_cal_status
+    print('First status: {}'.format(first_cal_status))
+    while current_status == first_cal_status:
         time.sleep(2)
+        current_status = check_door_status(closed_threshold)
+        print('current status: {}'.format(current_status))
+        if time.time() - start_time > 30:
+            print('Calibration timeout')
+            return -1
 
-    return temporary_threshold
+        print('monitoring')
+
+    print('Calibration succeeded')
+
+    if not os.path.isdir(SETTINGS_DIR):
+        os.mkdir(SETTINGS_DIR)
+    print('making file')
+    settings_file = SETTINGS_DIR + '/threshold.txt'    
+    with open(settings_file, 'w') as threshold_file:
+        threshold_file.write('CLOSED_DOOR_DISTANCE_CM = {}'.format(closed_threshold))
+
+    return 0
+
 
 def get_door_state_from_str(door_state_string: str):
     door_state_string = door_state_string.strip().lower()
@@ -185,18 +201,32 @@ def set_threshold():
     if os.path.isfile(settings_file):
         with open(settings_file, 'r') as threshold_file:
             # Read variable value from text file
-            file_data = threshold_file.read()
-            return float(file_data.split()[-1])
-    else:
-        return MAX_CLOSED_DOOR_DISTANCE_CM
+            file_data = threshold_file.readlines()
 
-def check_door_status():
+        for line in file_data:
+            split_line = line.split('=')
+            key = split_line[0]
+            value = split_line[1]
+            if key == 'CLOSED_DOOR_DISTANCE_CM':
+                closed_threshold = value
+
+        return closed_threshold
+    else:
+        return CLOSED_DOOR_DISTANCE_CM
+
+def check_door_status(closed_distance=None):
+    
+    if not closed_distance:
+        closed_distance = CLOSED_DOOR_DISTANCE_CM
+
     distance_in_cm = get_distance_from_sensor_in_cm()
 
-    if distance_in_cm > MAX_CLOSED_DOOR_DISTANCE_CM:
-        return DoorState.open
-    else:
+    if math.fabs(closed_distance-distance_in_cm)/closed_distance <= PERCENTAGE_THRESHOLD:
+        print('distance: {} is determined to be closed'.format(distance_in_cm))
         return DoorState.closed
+    else:
+        print('distance: {} is determined to be open'.format(distance_in_cm))
+        return DoorState.open
 
 def open_door():
     if check_door_status() == DoorState.closed:
@@ -222,6 +252,9 @@ def process_command(firebase_connection, command):
     elif command == ValidCommands.closeDoor.name:
         print_with_timestamp('closeDoor command')
         close_door()
+    elif command == ValidCommands.calibrate.name:
+        print_with_timestamp('calibrate command')
+        calibrate()
     else:
         print_with_timestamp('invalid command')
         log_info('processed-invalid-command', data=command)
@@ -257,8 +290,8 @@ def main():
     log_info('bootup')
 
     # TO-DO: Check if threshold file is created or set default threshold
-    global MAX_CLOSED_DOOR_DISTANCE_CM
-    MAX_CLOSED_DOOR_DISTANCE_CM = set_threshold()
+    global CLOSED_DOOR_DISTANCE_CM
+    CLOSED_DOOR_DISTANCE_CM = set_threshold()
 
     global RASPI_SERIAL_NUM
     RASPI_SERIAL_NUM = get_serial()
