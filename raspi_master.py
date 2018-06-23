@@ -20,7 +20,7 @@ BASE_LOG_DIR = '/home/pi/log_files'
 SETTINGS_DIR = '/home/pi/settings'
 
 CLOSED_DOOR_DISTANCE_CM = 50
-PERCENTAGE_THRESHOLD = .05 # 10%
+PERCENTAGE_THRESHOLD = 0.1
 RASPI_SERIAL_NUM = None
 
 class DoorState(Enum):
@@ -51,7 +51,6 @@ def get_serial():
     return cpuserial
 
 def calibrate():
-    reading_diff_limit = 0.1 # Subsequent readings must be within 5% of each other
     initial_diff_limit = 0.5 # New reading must be at least 50% different from initial reading
 
     # Take current reading
@@ -62,16 +61,15 @@ def calibrate():
     toggle_door_state()
 
     # Check reading until value changes
-    reading_diff = 100
     initial_diff = 0
     prev_reading = first_reading
-    while reading_diff > reading_diff_limit or initial_diff < initial_diff_limit:
-        time.sleep(2)
+    while initial_diff < initial_diff_limit:
+        time.sleep(5)
         new_reading = get_distance_from_sensor_in_cm()
-
-        reading_diff = math.fabs(new_reading - prev_reading)/prev_reading
+        print('Sensor reading: {}'.format(new_reading))
+        
         initial_diff = math.fabs(new_reading - first_reading)/first_reading
-        print('monitoring')
+        print('initial_diff: {}'.format(initial_diff))
         prev_reading = new_reading
 
     # Set second reading
@@ -84,8 +82,8 @@ def calibrate():
 
     print('closed threshold: {}'.format(closed_threshold))
 
-    print('waiting for door to stop moving')
-    time.sleep(10)
+    #print('waiting for door to stop moving')
+    #time.sleep(10)
 
     first_cal_status = check_door_status(closed_threshold)
     print('Door status: {}'.format(first_cal_status.name))
