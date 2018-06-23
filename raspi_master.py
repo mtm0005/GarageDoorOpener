@@ -184,7 +184,7 @@ def get_sensor_reading():
     return stop-start
 
 def get_distance_from_sensor_in_cm():
-    distance_sum = []
+    distance_sum = 0
     num_samples = 20
     max_attempts = 3
     for i in range(num_samples):
@@ -199,7 +199,7 @@ def get_distance_from_sensor_in_cm():
             log_info('sensor-failure', data='attempts: {}'.format(attempts))
             raise Exception('sensor failure - max attempts')
 
-        distance_sum.append(reading)
+        distance_sum += reading
         time.sleep(0.01)
 
     distance_avg = distance_sum/num_samples 
