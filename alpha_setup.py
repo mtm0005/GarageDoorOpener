@@ -6,28 +6,34 @@ import RPi.GPIO as GPIO
 
 from raspi_master import calibrate, get_distance_from_sensor_in_cm, setup_gpio
 
-SETTINGS_DIR = '/Users/tylersherrod/Desktop/settings'
+SETTINGS_DIR = '/home/pi/settings'
 
 def main(cal=True):
     settings_file = SETTINGS_DIR + '/threshold.txt'
     if not os.path.isfile(settings_file) and not cal:
         # Set defauly threshold value if no settigns file exists
-        MAX_CLOSED_DOOR_DISTANCE_CM = 170 # About 5.5ft
+        CLOSED_DOOR_DISTANCE_CM = 50 # About 5.5ft
     elif not os.path.isfile(settings_file) and cal:
         # If cal is set to True
-        MAX_CLOSED_DOOR_DISTANCE_CM = calibrate()
+        CLOSED_DOOR_DISTANCE_CM = calibrate()
 
-        if MAX_CLOSED_DOOR_DISTANCE_CM != -1:
+        if CLOSED_DOOR_DISTANCE_CM != -1:
             with open(settings_file, 'w') as threshold_file:
                 # Write the new threshold value to the settings folder
-                threshold_file.write('MAX_CLOSED_DOOR_DISTANCE_CM = {}'.format(MAX_CLOSED_DOOR_DISTANCE_CM))
+                threshold_file.write('CLOSED_DOOR_DISTANCE_CM = {}'.format(CLOSED_DOOR_DISTANCE_CM))
 
     else:
         # If cal is set to false
         with open(settings_file, 'r') as threshold_file:
             # Read variable value from text file
-            file_data = threshold_file.read()
-            MAX_CLOSED_DOOR_DISTANCE_CM = file_data.split()[-1]
+            file_data = threshold_file.readlines()
+
+        for line in file_data:
+            split_line = line.split('=')
+            key = split_line[0]
+            value = split_line[1]
+            if key == 'CLOSED_DOOR_DISTANCE_CM':
+                CLOSED_DOOR_DISTANCE_CM = value
 
 def sensor_reading():
     prev_reading = int(get_distance_from_sensor_in_cm())
