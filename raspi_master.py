@@ -172,7 +172,9 @@ def get_sensor_reading():
     start = time.time()
     while GPIO.input(ECHO_PIN) == 0:
         if time.time()-start > 1:
-            return
+            log_info('Sensor timed out')
+            print_with_timestamp('Sensor timed out')
+            return None
 
     start = time.time()
 
@@ -189,7 +191,7 @@ def get_distance_from_sensor_in_cm():
     max_attempts = 3
     for i in range(num_samples):
         
-        reading = get_sensor_reading
+        reading = get_sensor_reading()
         attempts = 0
         while not reading and attempts < max_attempts:
             reading = get_sensor_reading()
