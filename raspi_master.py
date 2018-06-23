@@ -114,7 +114,10 @@ def git_pull():
     project_path = os.path.realpath(os.path.dirname(__file__))
     os.chdir(project_path)
 
-    raw_output = subprocess.check_output('git pull'.split())
+    try:
+        raw_output = subprocess.check_output('git pull'.split())
+    except BaseException as e:
+        log_info('git pull exception', data=e)
     return raw_output.decode('ascii')
 
 def print_with_timestamp(msg):
