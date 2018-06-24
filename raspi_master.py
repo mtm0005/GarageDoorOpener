@@ -9,6 +9,8 @@ import traceback
 
 from enum import Enum
 from firebase import firebase
+from pydrive.auth import GoogleAuth
+from pydrive.drive import GoogleDrive
 
 TRIG_PIN = 7
 ECHO_PIN = 12
@@ -310,7 +312,7 @@ def upload_log_file():
     gauth.LocalWebserverAuth()
 
     drive = GoogleDrive(gauth)
-    
+
     # Get most recent local error log file
     if not os.path.isdir(SETTINGS_DIR):
         return None
