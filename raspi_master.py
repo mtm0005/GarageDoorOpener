@@ -304,6 +304,47 @@ def log_info(group: str, data=None):
         # Write the message and the exception to that file.
         log_file.write('{} | {} | {}\n'.format(current_time, group, data))
 
+def upload_log_file():
+    # Uploads log_file to Google Drive
+    gauth = GoogleAuth()
+    gauth.LocalWebserverAuth()
+
+    drive = GoogleDrive(gauth)
+    
+    # Get most recent local error log file
+    if not os.path.isdir(SETTINGS_DIR):
+        return None
+
+    current_date_file = datetime.date.today().strftime('%Y_%m_%d') + '.txt'
+
+    # Determine if error log file exists for the day
+    if current_date_file not in os.listdir(SETTINGS_DIR):
+        return None
+    
+    # Check Google Drive for file/folder
+    file_list = drive.ListFile({'q': "'root' in parents and trashed=false"}).GetList()
+    folderID = []
+    for file in file_list:
+        if file['title'] == 'Error Logs':
+            folderID = file['id']
+    
+    # Create Error Logs folder if it doesn't exist
+    if not folderID:
+        folder = drive.CreateFile({'title': 'Error Logs', 'mimeType' : 'application/vnd.google-apps.folder'})
+        folder.Upload()
+    else:
+        # Check if file already exists in folder
+        driveID = {'q': "'{}' in parents and trashed=false".format(folderID)}
+        file_list = drive.ListFile(driveID).GetList()
+        for file in file_list:
+            if file['title'] == current_date_file:
+                return None
+
+    # Write file to Error Logs folder
+    file = drive.CreateFile({"title": current_date_file, "parents": [{"kind": "drive#fileLink", "id": folderID}]})
+    file.SetContentFile(SETTINGS_DIR + '/' + current_date_file)
+    file.Upload()
+
 def main():
     log_info('bootup')
 
