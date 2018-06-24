@@ -327,12 +327,12 @@ def upload_log_file():
     file_list = drive.ListFile({'q': "'root' in parents and trashed=false"}).GetList()
     folderID = []
     for file in file_list:
-        if file['title'] == 'Error Logs':
+        if file['title'] == RASPI_SERIAL_NUM + ' - Error Logs':
             folderID = file['id']
     
     # Create Error Logs folder if it doesn't exist
     if not folderID:
-        folder = drive.CreateFile({'title': 'Error Logs', 'mimeType' : 'application/vnd.google-apps.folder'})
+        folder = drive.CreateFile({'title': RASPI_SERIAL_NUM + ' - Error Logs', 'mimeType' : 'application/vnd.google-apps.folder'})
         folder.Upload()
     else:
         # Check if file already exists in folder
