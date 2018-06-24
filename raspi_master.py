@@ -53,7 +53,8 @@ def get_serial():
     return cpuserial
 
 def calibrate():
-    initial_diff_limit = 0.5 # New reading must be at least 50% different from initial reading
+    # Readings must be 3 times different than initial reading
+    initial_diff_limit = 3
 
     # Take current reading
     first_reading = get_distance_from_sensor_in_cm()
@@ -306,49 +307,55 @@ def log_info(group: str, data=None):
         # Write the message and the exception to that file.
         log_file.write('{} | {} | {}\n'.format(current_time, group, data))
 
-def upload_log_file():
-    # Uploads log_file to Google Drive
+def google_auth():
     gauth = GoogleAuth()
     gauth.LocalWebserverAuth()
 
     drive = GoogleDrive(gauth)
 
-    # Get most recent local error log file
+    return drive
+
+def upload_log_file(drive):
+    # Uploads log_file to Google Drive
+
+    # Check if settings folder even exists
     if not os.path.isdir(SETTINGS_DIR):
         return None
 
-    current_date_file = datetime.date.today().strftime('%Y_%m_%d') + '.txt'
+    previous_date_file = datetime.datetime.strftime(datetime.datetime.now() - datetime.timedelta(1), '%Y-%m-%d') + '.txt'
 
     # Determine if error log file exists for the day
-    if current_date_file not in os.listdir(SETTINGS_DIR):
+    if previous_date_file not in os.listdir(SETTINGS_DIR):
         return None
     
-    # Check Google Drive for file/folder
+    # Check if Error Logs folder already exists on Google Drive
     file_list = drive.ListFile({'q': "'root' in parents and trashed=false"}).GetList()
-    folderID = []
-    for file in file_list:
-        if file['title'] == RASPI_SERIAL_NUM + ' - Error Logs':
-            folderID = file['id']
+    folderID = None
+    for f in file_list:
+        if f['title'] == RASPI_SERIAL_NUM + ' - Error Logs':
+            folderID = f['id']
     
     # Create Error Logs folder if it doesn't exist
     if not folderID:
         folder = drive.CreateFile({'title': RASPI_SERIAL_NUM + ' - Error Logs', 'mimeType' : 'application/vnd.google-apps.folder'})
         folder.Upload()
     else:
-        # Check if file already exists in folder
+        # Check if file already exists in folder, return None if file already exists
         driveID = {'q': "'{}' in parents and trashed=false".format(folderID)}
         file_list = drive.ListFile(driveID).GetList()
-        for file in file_list:
-            if file['title'] == current_date_file:
+        for f in file_list:
+            if f['title'] == previous_date_file:
                 return None
 
     # Write file to Error Logs folder
-    file = drive.CreateFile({"title": current_date_file, "parents": [{"kind": "drive#fileLink", "id": folderID}]})
-    file.SetContentFile(SETTINGS_DIR + '/' + current_date_file)
-    file.Upload()
+    f = drive.CreateFile({"title": previous_date_file, "parents": [{"kind": "drive#fileLink", "id": folderID}]})
+    f.SetContentFile(SETTINGS_DIR + '/' + previous_date_file)
+    f.Upload()
 
 def main():
     log_info('bootup')
+
+    drive = google_auth()
 
     # TO-DO: Check if threshold file is created or set default threshold
     global CLOSED_DOOR_DISTANCE_CM
@@ -365,6 +372,10 @@ def main():
         previous_door_state = DoorState.unknown
 
     while True:
+        # Upload log file at the 01:00 hour
+        if datetime.datetime.now().hour == 1 and datetime.datetime.now().minute < 2:
+            upload_log_file(drive)
+
         command = get_command(firebase_connection)
         if command:
             process_command(firebase_connection, command)
