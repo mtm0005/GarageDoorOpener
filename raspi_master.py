@@ -315,20 +315,23 @@ def google_auth():
 
     return drive
 
-def upload_log_file(drive):
+def upload_log_file(drive):    
     # Uploads log_file to Google Drive
-
+    print('enter upload log file')
     # Check if settings folder even exists
-    if not os.path.isdir(SETTINGS_DIR):
+    if not os.path.isdir(BASE_LOG_DIR):
+        print('log folder doesnt exist on Pi')
         return None
 
-    previous_date_file = datetime.datetime.strftime(datetime.datetime.now() - datetime.timedelta(1), '%Y-%m-%d') + '.txt'
+    previous_date_file = datetime.datetime.strftime(datetime.datetime.now() - datetime.timedelta(1), '%Y_%m_%d') + '.txt'
 
     # Determine if error log file exists for the day
-    if previous_date_file not in os.listdir(SETTINGS_DIR):
+    if previous_date_file not in os.listdir(BASE_LOG_DIR):
+        print('file does not exist in log folder')
         return None
     
     # Check if Error Logs folder already exists on Google Drive
+    print('Checking Google for folder')
     file_list = drive.ListFile({'q': "'root' in parents and trashed=false"}).GetList()
     folderID = None
     for f in file_list:
@@ -337,19 +340,26 @@ def upload_log_file(drive):
     
     # Create Error Logs folder if it doesn't exist
     if not folderID:
+        print('Creating Google folder')
         folder = drive.CreateFile({'title': RASPI_SERIAL_NUM + ' - Error Logs', 'mimeType' : 'application/vnd.google-apps.folder'})
         folder.Upload()
+        folderID = folder['id']
     else:
+        print('Checking Google folder for file')
         # Check if file already exists in folder, return None if file already exists
         driveID = {'q': "'{}' in parents and trashed=false".format(folderID)}
         file_list = drive.ListFile(driveID).GetList()
         for f in file_list:
             if f['title'] == previous_date_file:
+                print('file already exists on Google')
                 return None
 
+    print('folderID: {}'.format(folderID))
+            
+    print('uploading file')
     # Write file to Error Logs folder
     f = drive.CreateFile({"title": previous_date_file, "parents": [{"kind": "drive#fileLink", "id": folderID}]})
-    f.SetContentFile(SETTINGS_DIR + '/' + previous_date_file)
+    f.SetContentFile(BASE_LOG_DIR + '/' + previous_date_file)
     f.Upload()
 
 def main():
