@@ -280,7 +280,7 @@ def process_command(firebase_connection, command):
         calibrate()
     elif command == ValidCommands.updateLogFile.name:
         print_with_timestamp('updateLogFile command')
-        upload_log_file(DRIVE_AUTH)
+        upload_log_file(DRIVE_AUTH, day='today')
     else:
         print_with_timestamp('invalid command')
         log_info('processed-invalid-command', data=command)
@@ -320,7 +320,7 @@ def google_auth():
 
     return drive
 
-def upload_log_file(drive):    
+def upload_log_file(drive, day='yesterday'):    
     # Uploads log_file to Google Drive
     print('enter upload log file')
     # Check if settings folder even exists
@@ -328,10 +328,13 @@ def upload_log_file(drive):
         print('log folder doesnt exist on Pi')
         return None
 
-    previous_date_file = datetime.datetime.strftime(datetime.datetime.now() - datetime.timedelta(1), '%Y_%m_%d') + '.txt'
+    if day == 'yesterday':
+        date_file = datetime.datetime.strftime(datetime.datetime.now() - datetime.timedelta(1), '%Y_%m_%d') + '.txt'
+    elif day == 'today':
+        date_file = datetime.datetime.now().strftime('%H_%M_%S') + '.txt'
 
     # Determine if error log file exists for the day
-    if previous_date_file not in os.listdir(BASE_LOG_DIR):
+    if date_file not in os.listdir(BASE_LOG_DIR):
         print('file does not exist in log folder')
         return None
     
@@ -355,7 +358,7 @@ def upload_log_file(drive):
         driveID = {'q': "'{}' in parents and trashed=false".format(folderID)}
         file_list = drive.ListFile(driveID).GetList()
         for f in file_list:
-            if f['title'] == previous_date_file:
+            if f['title'] == date_file:
                 print('file already exists on Google; deleting file')
                 f.Delete()
 
@@ -363,8 +366,8 @@ def upload_log_file(drive):
             
     print('uploading file')
     # Write file to Error Logs folder
-    f = drive.CreateFile({"title": previous_date_file, "parents": [{"kind": "drive#fileLink", "id": folderID}]})
-    f.SetContentFile(BASE_LOG_DIR + '/' + previous_date_file)
+    f = drive.CreateFile({"title": date_file, "parents": [{"kind": "drive#fileLink", "id": folderID}]})
+    f.SetContentFile(BASE_LOG_DIR + '/' + date_file)
     f.Upload()
 
 def main():
