@@ -20,6 +20,7 @@ FIREBASE_URL = 'https://garagedoortest-731f7.firebaseio.com/'
 API_KEY = 'AIzaSyC9qjcqNPZsUOUU0fBTTV5b5I1GT89oxb4'
 BASE_LOG_DIR = '/home/pi/log_files'
 SETTINGS_DIR = '/home/pi/settings'
+DRIVE_AUTH = None
 
 CLOSED_DOOR_DISTANCE_CM = 150
 PERCENTAGE_THRESHOLD = 0.1
@@ -37,7 +38,8 @@ class ValidCommands(Enum):
     checkDoorStatus = 1
     openDoor = 2
     closeDoor = 3
-    calibrate = 4
+    updateLogFile = 4
+    calibrate = 5
 
 def get_serial():
     # Extract serial from cpuinfo file
@@ -276,6 +278,9 @@ def process_command(firebase_connection, command):
     elif command == ValidCommands.calibrate.name:
         print_with_timestamp('calibrate command')
         calibrate()
+    elif command == ValidCommands.updateLogFile.name:
+        print_with_timestamp('updateLogFile command')
+        upload_log_file(DRIVE_AUTH)
     else:
         print_with_timestamp('invalid command')
         log_info('processed-invalid-command', data=command)
@@ -351,8 +356,8 @@ def upload_log_file(drive):
         file_list = drive.ListFile(driveID).GetList()
         for f in file_list:
             if f['title'] == previous_date_file:
-                print('file already exists on Google')
-                return None
+                print('file already exists on Google; deleting file')
+                f.Delete()
 
     print('folderID: {}'.format(folderID))
             
@@ -365,7 +370,8 @@ def upload_log_file(drive):
 def main():
     log_info('bootup')
 
-    drive = google_auth()
+    global DRIVE_AUTH
+    DRIVE_AUTH = google_auth()
 
     # TO-DO: Check if threshold file is created or set default threshold
     global CLOSED_DOOR_DISTANCE_CM
@@ -382,9 +388,9 @@ def main():
         previous_door_state = DoorState.unknown
 
     while True:
-        # Upload log file at the 01:00 hour
+        # Upload log file at 01:00-01:01
         if datetime.datetime.now().hour == 1 and datetime.datetime.now().minute < 2:
-            upload_log_file(drive)
+            upload_log_file(DRIVE_AUTH)
 
         command = get_command(firebase_connection)
         if command:
