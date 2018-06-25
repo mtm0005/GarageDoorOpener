@@ -328,10 +328,9 @@ def upload_log_file(drive, day='yesterday'):
         print('log folder doesnt exist on Pi')
         return None
 
+    date_file = datetime.datetime.now().strftime('%H_%M_%S') + '.txt'
     if day == 'yesterday':
         date_file = datetime.datetime.strftime(datetime.datetime.now() - datetime.timedelta(1), '%Y_%m_%d') + '.txt'
-    elif day == 'today':
-        date_file = datetime.datetime.now().strftime('%H_%M_%S') + '.txt'
 
     # Determine if error log file exists for the day
     if date_file not in os.listdir(BASE_LOG_DIR):
