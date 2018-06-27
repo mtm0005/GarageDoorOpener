@@ -10,5 +10,6 @@ process=$(ps -ef | grep "raspi_master.py" | grep -v grep | awk '{print $1}')
 if [[ $process = "" ]]
 then
     # Restart the program
-    python3 ~/git/GarageDoorOpener/raspi_master.py &
+    cd ~/git/GarageDoorOpener
+    python3 raspi_master.py &
 fi
