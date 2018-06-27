@@ -56,7 +56,7 @@ def get_serial():
 
 def calibrate():
     # Readings must be 3 times different than initial reading
-    initial_diff_limit = 3
+    initial_diff_limit = 0.7
 
     # Take current reading
     first_reading = get_distance_from_sensor_in_cm()
@@ -86,7 +86,7 @@ def calibrate():
     print('closed threshold: {}'.format(open_threshold))
 
     #print('waiting for door to stop moving')
-    #time.sleep(10)
+    time.sleep(10)
 
     first_cal_status = check_door_status(open_threshold)
     print('Door status: {}'.format(first_cal_status.name))
@@ -228,8 +228,8 @@ def set_threshold():
 
         for line in file_data:
             split_line = line.split('=')
-            key = split_line[0]
-            value = split_line[1]
+            key = split_line[0].strip()
+            value = split_line[1].strip()
             if key == 'OPEN_DOOR_DISTANCE_CM':
                 open_threshold = value
 
@@ -241,6 +241,8 @@ def check_door_status(open_distance=None):
     
     if not open_distance:
         open_distance = OPEN_DOOR_DISTANCE_CM
+
+    open_distance = float(open_distance)
 
     distance_in_cm = get_distance_from_sensor_in_cm()
 
@@ -412,11 +414,11 @@ def main():
         time.sleep(0.5)
 
 if __name__ == '__main__':
-    try:
+    #try:
         main()
         print_with_timestamp('returned from main')
         GPIO.cleanup()
-    except BaseException as e:
-        GPIO.cleanup()
-        print_with_timestamp('exception occurred')
-        log_info('exception', data=e)
+    #except BaseException as e:
+    #    GPIO.cleanup()
+    #    print_with_timestamp('exception occurred')
+    #    log_info('exception', data=e)
