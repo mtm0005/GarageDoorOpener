@@ -299,7 +299,7 @@ def notify_user(firebase_connection, status: DoorState):
     # Loop until we get a device ID.
     device_id = None
     while not device_id:
-        device_id = firebase_connection.get('door-{}/deviceID'.format(RASPI_SERIAL_NUM), None)
+        device_id = firebase_connection.get('door-{}/device ID'.format(RASPI_SERIAL_NUM), None)
         if not device_id:
             time.sleep(1)
 
