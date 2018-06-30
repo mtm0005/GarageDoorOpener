@@ -167,11 +167,10 @@ def get_command(firebase_connection):
     return command
 
 def get_status(firebase_connection):
-    status = ''
-    try:
-        status = firebase_connection.get('door-{}/status'.format(RASPI_SERIAL_NUM), None)
-    except:
+    status = firebase_connection.get('door-{}/status'.format(RASPI_SERIAL_NUM), None)
+    if status == None:
         firebase_connection.put('door-{}'.format(RASPI_SERIAL_NUM), 'status', '')
+        status = ''
 
     return status
 
@@ -298,13 +297,13 @@ def notify_user(firebase_connection, status: DoorState):
     push_service = pyfcm.FCMNotification(api_key=API_KEY)
 
     # Loop until we get a device ID.
-    while True:
-        try:
-            device_id = 'device {}'.format(
-                firebase_connection.get('door-{}/device ID'.format(RASPI_SERIAL_NUM), None))
-            break
-        except:
+    device_id = None
+    while not device_id:
+        device_id = firebase_connection.get('door-{}/deviceID'.format(RASPI_SERIAL_NUM), None)
+        if not device_id:
             time.sleep(1)
+
+    device_id = 'device {}'.format(device_id)
 
     result = push_service.notify_single_device(registration_id=device_id,
         message_title='Garage door update', message_body=status.name)
