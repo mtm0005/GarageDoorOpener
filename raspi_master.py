@@ -167,7 +167,13 @@ def get_command(firebase_connection):
     return command
 
 def get_status(firebase_connection):
-    return firebase_connection.get('door-{}/status'.format(RASPI_SERIAL_NUM), None)
+    status = ''
+    try:
+        status = firebase_connection.get('door-{}/status'.format(RASPI_SERIAL_NUM), None)
+    except:
+        firebase_connection.put('door-{}'.format(RASPI_SERIAL_NUM), 'status', '')
+
+    return status
 
 def get_sensor_reading():
     GPIO.output(TRIG_PIN, 1)
@@ -290,8 +296,16 @@ def process_command(firebase_connection, command):
 def notify_user(firebase_connection, status: DoorState):
     print_with_timestamp('Sending notification to user')
     push_service = pyfcm.FCMNotification(api_key=API_KEY)
-    device_id = 'device {}'.format(
-        firebase_connection.get('door-{}/device ID'.format(RASPI_SERIAL_NUM), None))
+
+    # Loop until we get a device ID.
+    while True:
+        try:
+            device_id = 'device {}'.format(
+                firebase_connection.get('door-{}/device ID'.format(RASPI_SERIAL_NUM), None))
+            break
+        except:
+            time.sleep(1)
+
     result = push_service.notify_single_device(registration_id=device_id,
         message_title='Garage door update', message_body=status.name)
 
@@ -415,11 +429,11 @@ def main():
         time.sleep(0.5)
 
 if __name__ == '__main__':
-    #try:
+    try:
         main()
         print_with_timestamp('returned from main')
         GPIO.cleanup()
-    #except BaseException as e:
-    #    GPIO.cleanup()
-    #    print_with_timestamp('exception occurred')
-    #    log_info('exception', data=e)
+    except BaseException as e:
+        GPIO.cleanup()
+        print_with_timestamp('exception occurred')
+        log_info('exception', data=e)
