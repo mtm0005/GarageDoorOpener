@@ -137,6 +137,8 @@ def git_pull():
         raw_output = subprocess.check_output('git pull'.split())
     except BaseException as e:
         log_info('git pull exception', data=e)
+        return ''
+
     return raw_output.decode('ascii')
 
 def print_with_timestamp(msg):
