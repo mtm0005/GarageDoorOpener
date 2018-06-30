@@ -23,7 +23,7 @@ SETTINGS_DIR = '/home/pi/settings'
 DRIVE_AUTH = None
 
 OPEN_DOOR_DISTANCE_CM = 150
-PERCENTAGE_THRESHOLD = 0.1
+PERCENTAGE_THRESHOLD = 0.4
 RASPI_SERIAL_NUM = None
 
 class DoorState(Enum):
@@ -380,6 +380,7 @@ def main():
     # TO-DO: Check if threshold file is created or set default threshold
     global OPEN_DOOR_DISTANCE_CM
     OPEN_DOOR_DISTANCE_CM = set_threshold()
+    print('Threshold set to {} cm'.format(OPEN_DOOR_DISTANCE_CM))
 
     global RASPI_SERIAL_NUM
     RASPI_SERIAL_NUM = get_serial()
