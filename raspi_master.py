@@ -257,7 +257,7 @@ def check_door_status(open_distance=None):
         print('distance: {} is determined to be open'.format(distance_in_cm))
         return DoorState.open
     else:
-        print('distance: {} is determined to be closerd'.format(distance_in_cm))
+        print('distance: {} is determined to be closed'.format(distance_in_cm))
         return DoorState.closed
 
 def open_door():
