@@ -345,7 +345,7 @@ def upload_log_file(drive, day='yesterday'):
         print('log folder doesnt exist on Pi')
         return None
 
-    date_file = datetime.datetime.now().strftime('%H_%M_%S') + '.txt'
+    date_file = datetime.datetime.now().strftime('%Y_%m_%d') + '.txt'
     if day == 'yesterday':
         date_file = datetime.datetime.strftime(datetime.datetime.now() - datetime.timedelta(1), '%Y_%m_%d') + '.txt'
 
