@@ -124,6 +124,7 @@ def calibrate(firebase_connection):
 
     door_state = check_door_status()
     firebase_connection.put('door-{}'.format(RASPI_SERIAL_NUM), 'status', door_state.name)
+    notify_user(firebase_connection, door_state)
 
     return 0
 
