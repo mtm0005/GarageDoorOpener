@@ -56,7 +56,7 @@ def get_serial():
 
     return cpuserial_strip
 
-def calibrate():
+def calibrate(firebase_connection):
     # Readings must be 3 times different than initial reading
     initial_diff_limit = 0.7
 
@@ -118,6 +118,9 @@ def calibrate():
     with open(settings_file, 'w') as threshold_file:
         threshold_file.write('OPEN_DOOR_DISTANCE_CM = {}'.format(open_threshold))
 
+    door_state = check_door_status()
+    firebase_connection.put('door-{}'.format(RASPI_SERIAL_NUM), 'status', door_state.name)
+
     return 0
 
 
@@ -173,7 +176,7 @@ def get_command(firebase_connection):
         command = firebase_connection.get('admin/command', None)
         if command:
             # Clear the command field to acknowledge that it has been received
-            firebase_connection.put('admin', 'comand', '')
+            pass
 
     return command
 
@@ -295,7 +298,8 @@ def process_command(firebase_connection, command):
         close_door()
     elif command == ValidCommands.calibrate.name:
         print_with_timestamp('calibrate command')
-        calibrate()
+        firebase_connection.put('door-{}'.format(RASPI_SERIAL_NUM), 'status', 'calibrating')
+        calibrate(firebase_connection)
     elif command == ValidCommands.updateLogFile.name:
         print_with_timestamp('updateLogFile command')
         upload_log_file(DRIVE_AUTH, day='today')
