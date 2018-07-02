@@ -120,6 +120,9 @@ def calibrate(firebase_connection):
     with open(settings_file, 'w') as threshold_file:
         threshold_file.write('OPEN_DOOR_DISTANCE_CM = {}'.format(open_threshold))
 
+    global OPEN_DOOR_DISTANCE_CM
+    OPEN_DOOR_DISTANCE_CM = open_threshold
+
     time.sleep(5)
 
     door_state = check_door_status()
