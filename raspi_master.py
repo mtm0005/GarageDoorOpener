@@ -52,7 +52,9 @@ def get_serial():
     except:
         cpuserial = 'ERROR000000000'
 
-    return cpuserial
+    cpuserial_strip = cpuserial.lstrip('0')
+
+    return cpuserial_strip
 
 def calibrate():
     # Readings must be 3 times different than initial reading
@@ -165,6 +167,13 @@ def get_command(firebase_connection):
         # been received.
         firebase_connection.put('door-{}'.format(RASPI_SERIAL_NUM), 'command', '')
         print_with_timestamp('Received command: {}'.format(command))
+    else:
+        # Check for admin command
+        # This gives user commands precedence of admin commands
+        command = firebase_connection.get('admin/command', None)
+        if command:
+            # Clear the command field to acknowledge that it has been received
+            firebase_connection.put('admin', 'comand', '')
 
     return command
 
