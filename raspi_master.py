@@ -154,6 +154,20 @@ def git_pull():
 
     return raw_output.decode('ascii')
 
+def git_tag():
+    # Move to the project path.
+    project_path = os.path.realpath(os.path.dirname(__file__))
+    os.chdir(project_path)
+
+    try:
+        raw_output = subprocess.check_output('git tag --sort=-refname'.split())
+    except BaseException as e:
+        return e
+
+    output = raw_output.decode('ascii')
+
+    return output.split()[0]
+
 def print_with_timestamp(msg):
     print('{} - {}'.format(datetime.datetime.now(), msg))
 
@@ -336,7 +350,6 @@ def notify_user(firebase_connection, status: DoorState):
 
     return result
 
-# TO-DO: Add software version to each message.
 def log_info(group: str, data=None):
     # Make sure the BASE_LOG_DIR exists
     if not os.path.isdir(BASE_LOG_DIR):
@@ -407,7 +420,7 @@ def upload_log_file(drive, day='yesterday'):
     f.Upload()
 
 def main():
-    log_info('bootup')
+    log_info('bootup', data=git_tag())
 
     global DRIVE_AUTH
     DRIVE_AUTH = google_auth()
