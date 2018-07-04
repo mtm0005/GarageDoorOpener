@@ -345,7 +345,7 @@ def notify_users(firebase_connection, status: DoorState):
 
         if not result['success']:
             print_with_timestamp('notification failed to send')
-            log_info('notification-failure', data=status.name)
+            log_info('notification-failure', data=result)
 
         results.append(result)
 
