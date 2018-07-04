@@ -57,7 +57,7 @@ def get_serial():
     return cpuserial_strip
 
 def calibrate(firebase_connection):
-    firebase_connection.put('door-{}'.format(RASPI_SERIAL_NUM), 'status', 'calibrating')
+    firebase_connection.put('devices/{}'.format(RASPI_SERIAL_NUM), 'status', 'calibrating')
 
     # Readings must be 3 times different than initial reading
     initial_diff_limit = 0.7
@@ -126,11 +126,10 @@ def calibrate(firebase_connection):
     time.sleep(5)
 
     door_state = check_door_status()
-    firebase_connection.put('door-{}'.format(RASPI_SERIAL_NUM), 'status', door_state.name)
-    notify_user(firebase_connection, door_state)
+    firebase_connection.put('devices/{}'.format(RASPI_SERIAL_NUM), 'status', door_state.name)
+    notify_users(firebase_connection, door_state)
 
-    return 0
-
+    return
 
 def get_door_state_from_str(door_state_string: str):
     door_state_string = door_state_string.strip().lower()
@@ -185,12 +184,12 @@ def get_firebase_connection():
     return firebase.FirebaseApplication(FIREBASE_URL)
 
 def get_command(firebase_connection):
-    command = firebase_connection.get('door-{}/command'.format(RASPI_SERIAL_NUM), None)
+    command = firebase_connection.get('devices/{}/command'.format(RASPI_SERIAL_NUM), None)
 
     if command:
         # Clear the command field on firebase so that the App knows it has
         # been received.
-        firebase_connection.put('door-{}'.format(RASPI_SERIAL_NUM), 'command', '')
+        firebase_connection.put('devices/{}'.format(RASPI_SERIAL_NUM), 'command', '')
         print_with_timestamp('Received command: {}'.format(command))
     else:
         # Check for admin command
@@ -203,9 +202,9 @@ def get_command(firebase_connection):
     return command
 
 def get_status(firebase_connection):
-    status = firebase_connection.get('door-{}/status'.format(RASPI_SERIAL_NUM), None)
+    status = firebase_connection.get('devices/{}/status'.format(RASPI_SERIAL_NUM), None)
     if status == None:
-        firebase_connection.put('door-{}'.format(RASPI_SERIAL_NUM), 'status', '')
+        firebase_connection.put('devices/{}'.format(RASPI_SERIAL_NUM), 'status', '')
         status = ''
 
     return status
@@ -303,7 +302,7 @@ def close_door():
         toggle_door_state()
 
 def update_status(firebase_connection, status):
-    firebase_connection.put('door-{}'.format(RASPI_SERIAL_NUM), 'status', status.name)
+    firebase_connection.put('devices/{}'.format(RASPI_SERIAL_NUM), 'status', status.name)
 
 def process_command(firebase_connection, command):
     print_with_timestamp('Processing command: {}'.format(command))
@@ -328,27 +327,29 @@ def process_command(firebase_connection, command):
         print_with_timestamp('invalid command')
         log_info('processed-invalid-command', data=command)
 
-def notify_user(firebase_connection, status: DoorState):
+def notify_users(firebase_connection, status: DoorState):
     print_with_timestamp('Sending notification to user')
     push_service = pyfcm.FCMNotification(api_key=API_KEY)
 
     # Loop until we get a device ID.
-    device_id = None
-    while not device_id:
-        device_id = firebase_connection.get('door-{}/device ID'.format(RASPI_SERIAL_NUM), None)
-        if not device_id:
+    phone_ids = None
+    while not phone_ids:
+        phone_ids = firebase_connection.get('devices/{}/phone_IDs'.format(RASPI_SERIAL_NUM), None)
+        if not phone_ids:
             time.sleep(1)
 
-    device_id = 'device {}'.format(device_id)
+    results = []
+    for phone in phone_ids.keys():
+        result = push_service.notify_single_device(registration_id=phone,
+            message_title='Garage door update', message_body=status.name)
 
-    result = push_service.notify_single_device(registration_id=device_id,
-        message_title='Garage door update', message_body=status.name)
+        if not result['success']:
+            print_with_timestamp('notification failed to send')
+            log_info('notification-failure', data=status.name)
 
-    if not result['success']:
-        print_with_timestamp('notification failed to send')
-        log_info('notification-failure', data=status.name)
+        results.append(result)
 
-    return result
+    return results
 
 def log_info(group: str, data=None):
     # Make sure the BASE_LOG_DIR exists
@@ -453,7 +454,7 @@ def main():
         if current_door_state != previous_door_state:
             previous_door_state = current_door_state
             update_status(firebase_connection, current_door_state)
-            notify_user(firebase_connection, current_door_state)
+            notify_users(firebase_connection, current_door_state)
 
         # Exit if there is an update.
         if git_pull() != 'Already up-to-date.\n':
