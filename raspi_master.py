@@ -109,7 +109,7 @@ def calibrate(firebase_connection):
 
     door_state = check_door_status()
     firebase_connection.put('devices/{}'.format(RASPI_SERIAL_NUM), 'status', door_state.name)
-    notify_users(firebase_connection, door_state)
+    firebase_utils.notify_users(firebase_connection, RASPI_SERIAL_NUM, API_KEY, door_state)
 
     return
 
@@ -284,7 +284,7 @@ def main():
         if current_door_state != previous_door_state:
             previous_door_state = current_door_state
             update_status(firebase_connection, current_door_state)
-            notify_users(firebase_connection, current_door_state)
+            firebase_utils.notify_users(firebase_connection, RASPI_SERIAL_NUM, API_KEY, current_door_state)
 
         # Exit if there is an update.
         if git_utils.git_pull() != 'Already up-to-date.\n':
