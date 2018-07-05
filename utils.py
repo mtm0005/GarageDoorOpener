@@ -22,7 +22,7 @@ def get_serial():
     return cpuserial_strip
 
 def print_with_timestamp(msg):
-    print('{} - {}'.format(datetime.datetime.now(), msg)))
+    print('{} - {}'.format(datetime.datetime.now(), msg))
 
 def log_info(group: str, data=None):
     # Make sure the BASE_LOG_DIR exists
