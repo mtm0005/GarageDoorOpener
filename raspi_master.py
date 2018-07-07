@@ -41,25 +41,26 @@ class ValidCommands(Enum):
 def calibrate(firebase_connection):
     firebase_connection.put('devices/{}'.format(RASPI_SERIAL_NUM), 'status', 'calibrating')
 
-    # Readings must be 3 times different than initial reading
+    # Readings must be 70% different than initial reading
     initial_diff_limit = 0.7
 
     # Take current reading
     first_reading = get_distance_from_sensor_in_cm()
+    print('Initial reading: {} cm'.format(first_reading))
 
     # Toggle garage door state
-    print('toggle')
+    print('Toggle')
     toggle_door_state()
 
     # Check reading until value changes
+    print('Monitoring...')
     initial_diff = 0
     while initial_diff < initial_diff_limit:
         time.sleep(5)
         new_reading = get_distance_from_sensor_in_cm()
-        print('Sensor reading: {}'.format(new_reading))
         
         initial_diff = math.fabs(new_reading - first_reading)/first_reading
-        print('initial_diff: {}'.format(initial_diff))
+        print('{} cm | {} diff'.format(new_reading, initial_diff))
 
     # Set second reading
     second_reading = new_reading
@@ -69,35 +70,44 @@ def calibrate(firebase_connection):
     else:
         open_threshold = second_reading
 
-    print('open threshold: {}'.format(open_threshold))
+    print('')
+    print('---------------------------------')
+    print('open_threshold is set to {} cm'.format(open_threshold))
+    print('---------------------------------')
+    print('')
 
-    #print('waiting for door to stop moving')
+    print('Waiting...')
     time.sleep(10)
 
     first_cal_status = check_door_status(open_threshold)
     print('Door status: {}'.format(first_cal_status.name))
 
-    print('toggle')
+    print('Toggle')
     toggle_door_state()
 
     start_time = time.time()
-    current_status = first_cal_status
-    print('First status: {}'.format(first_cal_status))
-    while current_status == first_cal_status:
+    print('Monitoring...')
+    while True:
         time.sleep(2)
         current_status = check_door_status(open_threshold)
-        print('current status: {}'.format(current_status))
+
+        if current_status != first_cal_status:
+            print('Door status has changed')
+            time.sleep(2)
+            status_verification = check_door_status(open_threshold)
+            if status_verification == current_status:
+                print('Door status verified as: {}'.format(current_status))
+                break
+
         if time.time() - start_time > 30:
             print('Calibration timeout')
             return -1
-
-        print('monitoring')
 
     print('Calibration succeeded')
 
     if not os.path.isdir(SETTINGS_DIR):
         os.mkdir(SETTINGS_DIR)
-    print('making file')
+    print('Writing threshold to settings file')
     settings_file = SETTINGS_DIR + '/threshold.txt'    
     with open(settings_file, 'w') as threshold_file:
         threshold_file.write('OPEN_DOOR_DISTANCE_CM = {}'.format(open_threshold))
@@ -107,7 +117,7 @@ def calibrate(firebase_connection):
 
     time.sleep(5)
 
-    door_state = check_door_status()
+    door_state = current_status
     firebase_connection.put('devices/{}'.format(RASPI_SERIAL_NUM), 'status', door_state.name)
     firebase_utils.notify_users(firebase_connection, RASPI_SERIAL_NUM, API_KEY, door_state)
 
@@ -253,6 +263,11 @@ def process_command(firebase_connection, command):
 def main():
     utils.log_info('bootup', data=git_utils.git_tag())
 
+    # Initial check for update; exit if there is an update
+    if git_utils.git_pull() != 'Already up-to-date.\n':
+            utils.log_info('update')
+            return 0
+
     global DRIVE_AUTH
     DRIVE_AUTH = utils.google_auth()
 
@@ -291,8 +306,6 @@ def main():
                 firebase_utils.notify_users(firebase_connection, RASPI_SERIAL_NUM, API_KEY, current_door_state)
 
         # Exit if there is an update.
-        # TO-DO: Put this at the beginning of the loop in case we push a bug that crashes the program
-        #   before it gets to this git_pull() and need to push out a fix for that bug. 
         if git_utils.git_pull() != 'Already up-to-date.\n':
             utils.log_info('update')
             return 0
