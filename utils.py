@@ -1,5 +1,6 @@
 import datetime
 import os
+import subprocess
 
 from pydrive.auth import GoogleAuth
 from pydrive.drive import GoogleDrive
@@ -21,6 +22,20 @@ def get_serial():
 
     return cpuserial_strip
 
+def get_cpu_temperature():
+    # Move to the project path.
+    project_path = os.path.realpath(os.path.dirname(__file__))
+    os.chdir(project_path)
+
+    try:
+        raw_output = subprocess.check_output('/opt/vc/bin/vcgencmd measure_temp'.split())
+    except BaseException as e:
+        return e
+
+    output = raw_output.decode('ascii')
+
+    return output.split('=')[-1]
+
 def print_with_timestamp(msg):
     print('{} - {}'.format(datetime.datetime.now(), msg))
 
@@ -31,10 +46,11 @@ def log_info(group: str, data=None):
 
     current_time = datetime.datetime.now().strftime('%H_%M_%S')
     current_date = datetime.date.today().strftime('%Y_%m_%d')
+    cpu_temperature = self.get_cpu_temperature()
     file_path = '{}/{}.txt'.format(BASE_LOG_DIR, current_date)
     with open(file_path, 'a') as log_file:
         # Write the message and the exception to that file.
-        log_file.write('{} | {} | {}\n'.format(current_time, group, data))
+        log_file.write('{} | {} | {} | {}\n'.format(current_time, group, data, cpu_temperature))
 
 def google_auth():
     gauth = GoogleAuth()
