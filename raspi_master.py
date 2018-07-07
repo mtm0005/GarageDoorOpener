@@ -282,11 +282,17 @@ def main():
 
         current_door_state = check_door_status()
         if current_door_state != previous_door_state:
-            previous_door_state = current_door_state
-            update_status(firebase_connection, current_door_state)
-            firebase_utils.notify_users(firebase_connection, RASPI_SERIAL_NUM, API_KEY, current_door_state)
+            # Double check this new reading in case it was faulty
+            time.sleep(1)
+            door_state_verification = check_door_status()
+            if current_door_state == door_state_verification:
+                previous_door_state = current_door_state
+                update_status(firebase_connection, current_door_state)
+                firebase_utils.notify_users(firebase_connection, RASPI_SERIAL_NUM, API_KEY, current_door_state)
 
         # Exit if there is an update.
+        # TO-DO: Put this at the beginning of the loop in case we push a bug that crashes the program
+        #   before it gets to this git_pull() and need to push out a fix for that bug. 
         if git_utils.git_pull() != 'Already up-to-date.\n':
             utils.log_info('update')
             return 0

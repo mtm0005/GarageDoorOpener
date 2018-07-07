@@ -50,7 +50,7 @@ def log_info(group: str, data=None):
     file_path = '{}/{}.txt'.format(BASE_LOG_DIR, current_date)
     with open(file_path, 'a') as log_file:
         # Write the message and the exception to that file.
-        log_file.write('{} | {} | {} | {}\n'.format(current_time, group, data, cpu_temperature))
+        log_file.write('{} | {} | {} | {}\n'.format(current_time, cpu_temperature, group, data))
 
 def google_auth():
     gauth = GoogleAuth()
