@@ -46,7 +46,7 @@ def log_info(group: str, data=None):
 
     current_time = datetime.datetime.now().strftime('%H_%M_%S')
     current_date = datetime.date.today().strftime('%Y_%m_%d')
-    cpu_temperature = self.get_cpu_temperature()
+    cpu_temperature = get_cpu_temperature()
     file_path = '{}/{}.txt'.format(BASE_LOG_DIR, current_date)
     with open(file_path, 'a') as log_file:
         # Write the message and the exception to that file.
