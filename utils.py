@@ -32,7 +32,7 @@ def get_cpu_temperature():
     except BaseException as e:
         return e
 
-    output = raw_output.decode('ascii')
+    output = raw_output.decode('ascii').strip()
 
     return output.split('=')[-1]
 
