@@ -19,7 +19,7 @@ API_KEY = 'AIzaSyC9qjcqNPZsUOUU0fBTTV5b5I1GT89oxb4'
 SETTINGS_DIR = '/home/pi/settings'
 DRIVE_AUTH = None
 
-OPEN_DOOR_DISTANCE_CM = 150
+OPEN_DOOR_DISTANCE_CM = 25
 PERCENTAGE_THRESHOLD = 0.5
 RASPI_SERIAL_NUM = None
 
@@ -265,13 +265,13 @@ def main():
 
     # Initial check for update; exit if there is an update
     if git_utils.git_pull() != 'Already up-to-date.\n':
-            utils.log_info('update')
-            return 0
+        # TO-DO: This currently logs an update even when there is a git pull error
+        utils.log_info('update')
+        return 0
 
     global DRIVE_AUTH
     DRIVE_AUTH = utils.google_auth()
 
-    # TO-DO: Check if threshold file is created or set default threshold
     global OPEN_DOOR_DISTANCE_CM
     OPEN_DOOR_DISTANCE_CM = set_threshold()
     print('Threshold set to {} cm'.format(OPEN_DOOR_DISTANCE_CM))
