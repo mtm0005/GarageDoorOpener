@@ -5,7 +5,13 @@ import time
 import utils
 
 def get_firebase_connection(url):
-    return firebase.FirebaseApplication(url)
+    # Get password from secrets.txt (created manually on each device)
+    with open('secrets.txt', 'r') as f:
+        password = f.readline().strip()
+
+    authentication = firebase.FirebaseAuthentication(password, 'rasmcfall@gmail.com',
+        extra={'id': utils.get_serial()})
+    return firebase.FirebaseApplication(url, authentication=authentication)
 
 def get_command(firebase_connection, raspi_id):
     command = firebase_connection.get('devices/{}/command'.format(raspi_id), None)
