@@ -96,7 +96,7 @@ def calibrate(firebase_connection):
             time.sleep(2)
             status_verification = check_door_status(open_threshold)
             if status_verification == current_status:
-                print('Door status verified as: {}'.format(current_status))
+                print('Door status verified as: {}'.format(current_status.name))
                 break
 
         if time.time() - start_time > 30:
