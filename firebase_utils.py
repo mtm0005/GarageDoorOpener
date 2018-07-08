@@ -56,7 +56,7 @@ def notify_users(firebase_connection, raspi_id, api_key, status):
     results = []
     for phone in phone_ids.keys():
         result = push_service.notify_single_device(registration_id=phone,
-            message_title='Garage door update', message_body=status)
+            message_title='Garage door update', message_body=status, sound="Default")
 
         # TO-DO: Try to send notifications multiple times if there is a failure
         if not result['success']:
