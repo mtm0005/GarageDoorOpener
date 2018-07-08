@@ -7,7 +7,7 @@ from pydrive.drive import GoogleDrive
 
 ERROR_DIR = '/home/pi/log_files/errors'
 SENSOR_READINGS_DIR = '/home/pi/log_files/sensor_readings'
-USAGE_DIR = 'home/pi/log_files/usage'
+USAGE_DIR = '/home/pi/log_files/usage'
 
 def get_serial():
     # Extract serial from cpuinfo file
