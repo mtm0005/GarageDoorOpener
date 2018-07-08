@@ -43,6 +43,7 @@ def calibrate(firebase_connection):
 
     # Readings must be 70% different than initial reading
     initial_diff_limit = 0.7
+    reading_diff_limit = 0.1
 
     # Take current reading
     first_reading = get_distance_from_sensor_in_cm()
@@ -54,21 +55,32 @@ def calibrate(firebase_connection):
 
     # Check reading until value changes
     print('Monitoring...')
-    initial_diff = 0
-    while initial_diff < initial_diff_limit:
-        time.sleep(5)
+    previous_reading = first_reading
+    start_time = time.time()
+    while True:
+        time.sleep(2)
         new_reading = get_distance_from_sensor_in_cm()
-        
         initial_diff = math.fabs(new_reading - first_reading)/first_reading
         print('{} cm | {} diff'.format(new_reading, initial_diff))
 
-    # Set second reading
-    second_reading = new_reading
+        if initial_diff > initial_diff_limit:
+            time.sleep(2)
+            reading_diff = math.fabs(new_reading - previous_reading)/previous_reading
+            if reading_diff < reading_diff_limit:
+                break
 
-    if second_reading > first_reading:
+        if time.time() - start_time > 30:
+            print('Calibration timeout')
+            firebase_connection.put('devices/{}'.format(RASPI_SERIAL_NUM), 'status', 'calibration failed')
+            firebase_utils.notify_users(firebase_connection, RASPI_SERIAL_NUM, API_KEY, 'calibration failed')
+            return -1
+
+        previous_reading = new_reading
+
+    if new_reading > first_reading:
         open_threshold = first_reading
     else:
-        open_threshold = second_reading
+        open_threshold = new_reading
 
     print('')
     print('---------------------------------')
@@ -101,6 +113,8 @@ def calibrate(firebase_connection):
 
         if time.time() - start_time > 30:
             print('Calibration timeout')
+            firebase_connection.put('devices/{}'.format(RASPI_SERIAL_NUM), 'status', 'calibration failed')
+            firebase_utils.notify_users(firebase_connection, RASPI_SERIAL_NUM, API_KEY, 'calibration failed')
             return -1
 
     print('Calibration succeeded')
@@ -119,7 +133,7 @@ def calibrate(firebase_connection):
 
     door_state = current_status
     firebase_connection.put('devices/{}'.format(RASPI_SERIAL_NUM), 'status', door_state.name)
-    firebase_utils.notify_users(firebase_connection, RASPI_SERIAL_NUM, API_KEY, door_state)
+    firebase_utils.notify_users(firebase_connection, RASPI_SERIAL_NUM, API_KEY, door_state.name)
 
     return
 
@@ -234,15 +248,12 @@ def close_door():
     if check_door_status() == DoorState.open:
         toggle_door_state()
 
-def update_status(firebase_connection, status):
-    firebase_connection.put('devices/{}'.format(RASPI_SERIAL_NUM), 'status', status.name)
-
 def process_command(firebase_connection, command):
     utils.print_with_timestamp('Processing command: {}'.format(command))
     if command == ValidCommands.checkDoorStatus.name:
         utils.print_with_timestamp('checkDoorStatus command')
         status = check_door_status()
-        update_status(firebase_connection, status)
+        firebase_utils.update_status(firebase_connection, utils.get_serial(), status.name)
         print('Door is {}'.format(status.name))
     elif command == ValidCommands.openDoor.name:
         utils.print_with_timestamp('openDoor command')
@@ -302,8 +313,8 @@ def main():
             door_state_verification = check_door_status()
             if current_door_state == door_state_verification:
                 previous_door_state = current_door_state
-                update_status(firebase_connection, current_door_state)
-                firebase_utils.notify_users(firebase_connection, RASPI_SERIAL_NUM, API_KEY, current_door_state)
+                firebase_utils.update_status(firebase_connection, utils.get_serial(), current_door_state.name)
+                firebase_utils.notify_users(firebase_connection, RASPI_SERIAL_NUM, API_KEY, current_door_state.name)
 
         # Exit if there is an update.
         if git_utils.git_pull() != 'Already up-to-date.\n':

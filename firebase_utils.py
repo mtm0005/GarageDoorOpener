@@ -40,7 +40,7 @@ def get_status(firebase_connection, raspi_id):
     return status
 
 def update_status(firebase_connection, raspi_id, status):
-    firebase_connection.put('devices/{}'.format(raspi_id), 'status', status.name)
+    firebase_connection.put('devices/{}'.format(raspi_id), 'status', status)
 
 def notify_users(firebase_connection, raspi_id, api_key, status):
     utils.print_with_timestamp('Sending notification to user')
@@ -56,7 +56,7 @@ def notify_users(firebase_connection, raspi_id, api_key, status):
     results = []
     for phone in phone_ids.keys():
         result = push_service.notify_single_device(registration_id=phone,
-            message_title='Garage door update', message_body=status.name)
+            message_title='Garage door update', message_body=status)
 
         # TO-DO: Try to send notifications multiple times if there is a failure
         if not result['success']:
