@@ -164,7 +164,7 @@ def get_sensor_reading():
     start = time.time()
     while GPIO.input(ECHO_PIN) == 0:
         if time.time()-start > 1:
-            utils.log_info('Sensor timed out')
+            utils.log_error('Sensor timed out')
             utils.print_with_timestamp('Sensor timed out')
             return None
 
@@ -190,7 +190,7 @@ def get_distance_from_sensor_in_cm():
             attempts += 1
         
         if attempts >= max_attempts:
-            utils.log_info('sensor-failure', data='attempts: {}'.format(attempts))
+            utils.log_error('sensor-failure', data='attempts: {}'.format(attempts))
             raise Exception('sensor failure - max attempts')
 
         distance_sum += reading
@@ -235,18 +235,22 @@ def check_door_status(open_distance=None):
 
     if math.fabs(open_distance-distance_in_cm)/open_distance <= PERCENTAGE_THRESHOLD:
         print('distance: {} is determined to be open'.format(distance_in_cm))
+        utils.log_sensor_reading(distance_in_cm, 'open')
         return DoorState.open
     else:
         print('distance: {} is determined to be closed'.format(distance_in_cm))
+        utils.log_sensor_reading(distance_in_cm, 'closed')
         return DoorState.closed
 
 def open_door():
     if check_door_status() == DoorState.closed:
         toggle_door_state()
+        utils.log_usage('openDoor')
 
 def close_door():
     if check_door_status() == DoorState.open:
         toggle_door_state()
+        utils.log_usage('closeDoor')
 
 def process_command(firebase_connection, command):
     utils.print_with_timestamp('Processing command: {}'.format(command))
@@ -269,15 +273,15 @@ def process_command(firebase_connection, command):
         utils.upload_log_file(DRIVE_AUTH, RASPI_SERIAL_NUM, day='today')
     else:
         utils.print_with_timestamp('invalid command')
-        utils.log_info('processed-invalid-command', data=command)
+        utils.log_error('processed-invalid-command', data=command)
 
 def main():
-    utils.log_info('bootup', data=git_utils.git_tag())
+    utils.log_error('bootup', data=git_utils.git_tag())
 
     # Initial check for update; exit if there is an update
     if git_utils.git_pull() != 'Already up-to-date.\n':
         # TO-DO: This currently logs an update even when there is a git pull error
-        utils.log_info('update')
+        utils.log_error('update')
         return 0
 
     global DRIVE_AUTH
@@ -318,7 +322,7 @@ def main():
 
         # Exit if there is an update.
         if git_utils.git_pull() != 'Already up-to-date.\n':
-            utils.log_info('update')
+            utils.log_error('update')
             return 0
 
         time.sleep(0.5)
@@ -331,4 +335,4 @@ if __name__ == '__main__':
     except BaseException as e:
         GPIO.cleanup()
         utils.print_with_timestamp('exception occurred')
-        utils.log_info('exception', data=e)
+        utils.log_error('exception', data=e)
