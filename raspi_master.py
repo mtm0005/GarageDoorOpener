@@ -270,7 +270,7 @@ def process_command(firebase_connection, command):
         calibrate(firebase_connection)
     elif command == ValidCommands.updateLogFile.name:
         utils.print_with_timestamp('updateLogFile command')
-        utils.upload_log_file(DRIVE_AUTH, RASPI_SERIAL_NUM, day='today')
+        utils.upload_log_files(DRIVE_AUTH, admin_call=True)
     else:
         utils.print_with_timestamp('invalid command')
         utils.log_error('processed-invalid-command', data=command)
@@ -304,7 +304,7 @@ def main():
     while True:
         # Upload log file at 01:00-01:01
         if datetime.datetime.now().hour == 1 and datetime.datetime.now().minute < 2:
-            utils.upload_log_file(DRIVE_AUTH, RASPI_SERIAL_NUM)
+            utils.upload_log_files(DRIVE_AUTH)
 
         command = firebase_utils.get_command(firebase_connection, RASPI_SERIAL_NUM)
         if command:

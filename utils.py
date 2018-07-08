@@ -88,51 +88,55 @@ def google_auth():
 
     return drive
 
-def upload_log_file(drive, raspi_id, day='yesterday'):    
-    # Uploads log_file to Google Drive
-    print('enter upload log file')
-    # Check if settings folder even exists
-    if not os.path.isdir(ERROR_DIR):
-        print('log folder doesnt exist on Pi')
-        return None
+def upload_log_files(drive, admin_call=False):
+    raspi_id = get_serial()
+    # Verify RasPi serial number folder exists on Google Drive
+    folder_list = drive.ListFile({'q': "'root' in parents and trashed=false"}).GetList()
+    masterFolder = None
+    for f in folder_list:
+        if f['title'] == raspi_id + ' - Log Files':
+            masterFolder = f['id']
 
-    date_file = datetime.datetime.now().strftime('%Y_%m_%d') + '.txt'
-    if day == 'yesterday':
-        date_file = datetime.datetime.strftime(datetime.datetime.now() - datetime.timedelta(1), '%Y_%m_%d') + '.txt'
-
-    # Determine if error log file exists for the day
-    if date_file not in os.listdir(ERROR_DIR):
-        print('file does not exist in log folder')
-        return None
-    
-    # Check if Error Logs folder already exists on Google Drive
-    print('Checking Google for folder')
-    file_list = drive.ListFile({'q': "'root' in parents and trashed=false"}).GetList()
-    folderID = None
-    for f in file_list:
-        if f['title'] == raspi_id + ' - Error Logs':
-            folderID = f['id']
-    
-    # Create Error Logs folder if it doesn't exist
-    if not folderID:
-        print('Creating Google folder')
-        folder = drive.CreateFile({'title': raspi_id + ' - Error Logs', 'mimeType' : 'application/vnd.google-apps.folder'})
+    if not masterFolder:
+        folder = drive.CreateFile({'title': raspi_id + ' - Log Files', 'mimeType' : 'application/vnd.google-apps.folder'})
         folder.Upload()
-        folderID = folder['id']
-    else:
-        print('Checking Google folder for file')
-        # Check if file already exists in folder, return None if file already exists
-        driveID = {'q': "'{}' in parents and trashed=false".format(folderID)}
-        file_list = drive.ListFile(driveID).GetList()
-        for f in file_list:
-            if f['title'] == date_file:
-                print('file already exists on Google; deleting file')
-                f.Delete()
+        masterFolder = folder['id']
 
-    print('folderID: {}'.format(folderID))
-            
-    print('uploading file')
-    # Write file to Error Logs folder
-    f = drive.CreateFile({"title": date_file, "parents": [{"kind": "drive#fileLink", "id": folderID}]})
-    f.SetContentFile(ERROR_DIR + '/' + date_file)
-    f.Upload()
+    dir_list = {'Error Logs': ERROR_DIR, 'Sensor Reading Logs': SENSOR_READINGS_DIR, 'Usage Logs': USAGE_DIR}
+
+    # Upload today's log files
+    if admin_call:
+        upload_file = datetime.datetime.now().strftime('%Y_%m_%d') + '.txt'
+        delete_file = None
+    # Upload yesterday's log files
+    else:
+        upload_file = datetime.datetime.strftime(datetime.datetime.now() - datetime.timedelta(1), '%Y_%m_%d') + '.txt'
+        delete_file = datetime.datetime.strftime(datetime.datetime.now() - datetime.timedelta(8), '%Y_%m_%d') + '.txt'
+    
+    for key in dir_list.keys():
+        if upload_file in os.listdir(dir_list[key]):
+            driveID = {'q': "'{}' in parents and trashed=false".format(masterFolder)}
+            folder_list = drive.ListFile(driveID).GetList()
+            sub_folder = None
+            for f in folder_list:
+                if f['title'] == key:
+                    sub_folder = f['id']
+
+            if not sub_folder:
+                folder = drive.CreateFile({'title': key, 'mimeType' : 'application/vnd.google-apps.folder'})
+                folder.Upload()
+                sub_folder = folder['id']
+            else:
+                driveID = {'q': "'{}' in parents and trashed=false".format(sub_folder)}
+                file_list = drive.ListFile(driveID).GetList()
+                for f in file_list:
+                    if f['title'] == upload_file:
+                        f.Delete()
+
+            f = drive.CreateFile({"title": upload_file, "parents": [{"kind": "drive#fileLink", "id": sub_folder}]})
+            f.SetContentFile(dir_list[key] + '/' + upload_file)
+            f.Upload()
+
+            if delete_file:
+                if delete_file in os.listdir(dir_list[key]):
+                    os.remove(dir_list[key] + '/' + delete_file)

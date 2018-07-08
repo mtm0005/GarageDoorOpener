@@ -61,7 +61,7 @@ def notify_users(firebase_connection, raspi_id, api_key, status):
         # TO-DO: Try to send notifications multiple times if there is a failure
         if not result['success']:
             utils.print_with_timestamp('notification failed to send')
-            utils.log_info('notification-failure', data=result)
+            utils.log_error('notification-failure', data=result)
 
         results.append(result)
 
