@@ -17,6 +17,7 @@ GARAGE_DOOR_PIN = 11
 FIREBASE_URL = 'https://garagedoortest-731f7.firebaseio.com/'
 API_KEY = 'AIzaSyC9qjcqNPZsUOUU0fBTTV5b5I1GT89oxb4'
 SETTINGS_DIR = '/home/pi/settings'
+LOG_DIR = '/home/pi/log_files'
 DRIVE_AUTH = None
 
 OPEN_DOOR_DISTANCE_CM = 25
@@ -276,6 +277,9 @@ def process_command(firebase_connection, command):
         utils.log_error('processed-invalid-command', data=command)
 
 def main():
+    if not os.path.isdir(LOG_DIR):
+        os.mkdir(LOG_DIR)
+    
     utils.log_error('bootup', data=git_utils.git_tag())
 
     # Initial check for update; exit if there is an update
