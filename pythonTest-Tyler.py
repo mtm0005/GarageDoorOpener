@@ -1,22 +1,12 @@
 # Test python file
-import os
-import subprocess
+from pydrive.auth import GoogleAuth
+from pydrive.drive import GoogleDrive
 
+def google_auth():
+    gauth = GoogleAuth()
+    gauth.LocalWebserverAuth()
 
-def git_tag():
-    # Move to the project path.
-    project_path = os.path.realpath(os.path.dirname(__file__))
-    os.chdir(project_path)
+    drive = GoogleDrive(gauth)
 
-    try:
-        raw_output = subprocess.check_output('git tag --sort=-refname'.split())
-    except BaseException as e:
-        return e
+    return drive
 
-    output = raw_output.decode('ascii')
-
-    return output.split()[0]
-
-result = git_tag()
-
-print(result)

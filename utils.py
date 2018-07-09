@@ -91,13 +91,16 @@ def google_auth():
 def upload_log_files(drive, admin_call=False):
     raspi_id = get_serial()
     # Verify RasPi serial number folder exists on Google Drive
+    print('Looking for main folder')
     folder_list = drive.ListFile({'q': "'root' in parents and trashed=false"}).GetList()
     masterFolder = None
     for f in folder_list:
         if f['title'] == raspi_id + ' - Log Files':
+            print('Found main folder')
             masterFolder = f['id']
 
     if not masterFolder:
+        print('Main folder did not exist, creating now...')
         folder = drive.CreateFile({'title': raspi_id + ' - Log Files', 'mimeType' : 'application/vnd.google-apps.folder'})
         folder.Upload()
         masterFolder = folder['id']
@@ -114,29 +117,38 @@ def upload_log_files(drive, admin_call=False):
         delete_file = datetime.datetime.strftime(datetime.datetime.now() - datetime.timedelta(8), '%Y_%m_%d') + '.txt'
     
     for key in dir_list.keys():
+        print('Checking for {} upload file'.format(key))
         if upload_file in os.listdir(dir_list[key]):
+            print('Checking main folder for {}'.format(key))
             driveID = {'q': "'{}' in parents and trashed=false".format(masterFolder)}
             folder_list = drive.ListFile(driveID).GetList()
             sub_folder = None
             for f in folder_list:
                 if f['title'] == key:
+                    print('Found {} folder'.format(key))
                     sub_folder = f['id']
 
             if not sub_folder:
-                folder = drive.CreateFile({'title': key, 'mimeType' : 'application/vnd.google-apps.folder'})
+                print('{} folder did not exist, creating now...'.format(key))
+                folder = drive.CreateFile({'title': key, 'mimeType' : 'application/vnd.google-apps.folder', 
+                    "parents": [{"kind": "drive#fileLink", "id": masterFolder}]})
                 folder.Upload()
                 sub_folder = folder['id']
             else:
+                print('Checking if upload file already exists')
                 driveID = {'q': "'{}' in parents and trashed=false".format(sub_folder)}
                 file_list = drive.ListFile(driveID).GetList()
                 for f in file_list:
                     if f['title'] == upload_file:
+                        print('File exists, deleting now...')
                         f.Delete()
 
+            print('Uploading file to Google Drive')
             f = drive.CreateFile({"title": upload_file, "parents": [{"kind": "drive#fileLink", "id": sub_folder}]})
             f.SetContentFile(dir_list[key] + '/' + upload_file)
             f.Upload()
 
             if delete_file:
+                print('Deleting file from directory')
                 if delete_file in os.listdir(dir_list[key]):
                     os.remove(dir_list[key] + '/' + delete_file)
