@@ -197,9 +197,10 @@ def get_distance_from_sensor_in_cm():
         distance_sum += reading
         time.sleep(0.01)
 
-    distance_avg = distance_sum/num_samples 
+    distance_avg_cm = (distance_sum/num_samples) * 17000
+    rounded_result = round(distance_avg_cm, 2)
 
-    return distance_avg * 17000
+    return rounded_result
 
 def toggle_door_state():
     utils.print_with_timestamp('Toggling door state')
@@ -277,16 +278,16 @@ def process_command(firebase_connection, command):
         utils.log_error('processed-invalid-command', data=command)
 
 def main():
-    if not os.path.isdir(LOG_DIR):
-        os.mkdir(LOG_DIR)
-    
-    utils.log_error('bootup', data=git_utils.git_tag())
-
     # Initial check for update; exit if there is an update
     if git_utils.git_pull() != 'Already up-to-date.\n':
         # TO-DO: This currently logs an update even when there is a git pull error
         utils.log_error('update')
         return 0
+
+    if not os.path.isdir(LOG_DIR):
+        os.mkdir(LOG_DIR)
+    
+    utils.log_error('bootup', data=git_utils.git_tag())
 
     global DRIVE_AUTH
     DRIVE_AUTH = utils.google_auth()
