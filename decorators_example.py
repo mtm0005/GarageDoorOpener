@@ -55,3 +55,46 @@ def another_bad_func(x):
 s = another_bad_func(8)
 q = another_bad_func(0)
 print('{}, {}'.format(s, q))
+
+def greeting(expr):
+    def greeting_decorator(func):
+        def function_wrapper(*args, **kwargs):
+            print(expr + ", " + func.__name__ + " returns:")
+            func(*args, **kwargs)
+        return function_wrapper
+    return greeting_decorator
+
+@greeting("καλημερα")
+def foo(x):
+    print(42)
+
+foo("Hi")
+
+import multiprocessing
+def log_error(msg, data):
+    print('{} - {}'.format(msg, data))
+
+def timeout(seconds=10):
+    def timeout_decorator(func):
+        def function_wrapper(*args, **kwargs):
+            # start up a process running the decorated function.
+            p = multiprocessing.Process(target=func, args=args, kwargs=kwargs)
+            p.start()
+
+            # Wait for specified amount of time or until process finishes.
+            p.join(seconds)
+
+            # If thread is still active log an error and stop the process.
+            if p.is_alive():
+                log_error('timeout', 'seconds: {}, func: {}'.format(seconds, func.__name__))
+                p.terminate()
+                p.join()
+        return function_wrapper
+    return timeout_decorator
+
+@timeout(1)
+def idfg(x):
+    while True:
+        pass
+
+idfg("Hi")
