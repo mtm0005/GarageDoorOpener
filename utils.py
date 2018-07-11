@@ -1,4 +1,5 @@
 import datetime
+import multiprocessing
 import os
 import subprocess
 
@@ -8,6 +9,24 @@ from pydrive.drive import GoogleDrive
 ERROR_DIR = '/home/pi/log_files/errors'
 SENSOR_READINGS_DIR = '/home/pi/log_files/sensor_readings'
 USAGE_DIR = '/home/pi/log_files/usage'
+
+def timeout(seconds=10):
+    def timeout_decorator(func):
+        def function_wrapper(*args, **kwargs):
+            # start up a process running the decorated function.
+            p = multiprocessing.Process(target=func, args=args, kwargs=kwargs)
+            p.start()
+
+            # Wait for specified amount of time or until process finishes.
+            p.join(seconds)
+
+            # If thread is still active log an error and stop the process.
+            if p.is_alive():
+                log_error('timeout', 'seconds: {}, func: {}'.format(seconds, func.__name__))
+                p.terminate()
+                p.join()
+        return function_wrapper
+    return timeout_decorator
 
 def get_serial():
     # Extract serial from cpuinfo file
@@ -88,6 +107,7 @@ def google_auth():
 
     return drive
 
+@timeout
 def upload_log_files(drive, admin_call=False):
     raspi_id = get_serial()
     # Verify RasPi serial number folder exists on Google Drive
