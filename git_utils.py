@@ -11,7 +11,7 @@ def git_pull():
     try:
         raw_output = subprocess.check_output('git pull'.split())
     except BaseException as e:
-        utils.log_info('git pull exception', data=e)
+        utils.log_error('git pull exception', data=e)
         return ''
 
     return raw_output.decode('ascii')
