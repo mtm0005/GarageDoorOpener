@@ -7,14 +7,10 @@ git checkout alpha
 git pull
 
 # Install required modules
-list_of_modules="datetime
-Enum
-firebase
-GoogleAuth
-os
+list_of_modules="firebase
+PyDrive
 pyfcm
-RPi.GPIO
-subprocess"
+RPi.GPIO"
 
 for module in $list_of_modules
 do
