@@ -107,7 +107,7 @@ def google_auth():
 
     return drive
 
-@timeout
+@timeout()
 def upload_log_files(drive, admin_call=False):
     raspi_id = get_serial()
     # Verify RasPi serial number folder exists on Google Drive
