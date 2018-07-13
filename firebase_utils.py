@@ -4,6 +4,7 @@ import time
 
 import utils
 
+@utils.try_thrice
 def get_firebase_connection(url):
     # Get password from secrets.txt (created manually on each device)
     with open('secrets.txt', 'r') as f:
@@ -13,6 +14,7 @@ def get_firebase_connection(url):
         extra={'id': utils.get_serial()})
     return firebase.FirebaseApplication(url, authentication=authentication)
 
+@utils.try_thrice
 def get_command(firebase_connection, raspi_id):
     command = firebase_connection.get('devices/{}/command'.format(raspi_id), None)
 
@@ -31,6 +33,7 @@ def get_command(firebase_connection, raspi_id):
 
     return command
 
+@utils.try_thrice
 def get_status(firebase_connection, raspi_id):
     status = firebase_connection.get('devices/{}/status'.format(raspi_id), None)
     if status == None:
@@ -39,12 +42,16 @@ def get_status(firebase_connection, raspi_id):
 
     return status
 
+@utils.try_thrice
 def update_status(firebase_connection, raspi_id, status):
     firebase_connection.put('devices/{}'.format(raspi_id), 'status', status)
 
+@utils.try_thrice
 def notify_users(firebase_connection, raspi_id, api_key, status):
     utils.print_with_timestamp('Sending notification to user')
     push_service = pyfcm.FCMNotification(api_key=api_key)
+
+    utils.log_usage(status)
 
     # Loop until we get a device ID.
     phone_ids = None
@@ -56,7 +63,7 @@ def notify_users(firebase_connection, raspi_id, api_key, status):
     results = []
     for phone in phone_ids.keys():
         result = push_service.notify_single_device(registration_id=phone,
-            message_title='Garage door update', message_body=status)
+            message_title='Garage door update', message_body=status, sound="Default")
 
         # TO-DO: Try to send notifications multiple times if there is a failure
         if not result['success']:
