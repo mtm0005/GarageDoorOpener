@@ -3,28 +3,23 @@ import subprocess
 
 import utils
 
+@utils.try_thrice
 def git_pull():
     # Move to the project path.
     project_path = os.path.realpath(os.path.dirname(__file__))
     os.chdir(project_path)
 
-    try:
-        raw_output = subprocess.check_output('git pull'.split())
-    except BaseException as e:
-        utils.log_error('git pull exception', data=e)
-        return ''
+    raw_output = subprocess.check_output('git pull'.split())
 
     return raw_output.decode('ascii')
 
+@utils.try_thrice
 def git_tag():
     # Move to the project path.
     project_path = os.path.realpath(os.path.dirname(__file__))
     os.chdir(project_path)
 
-    try:
-        raw_output = subprocess.check_output('git tag --sort=-refname'.split())
-    except BaseException as e:
-        return e
+    raw_output = subprocess.check_output('git tag --sort=-refname'.split())
 
     output = raw_output.decode('ascii')
 

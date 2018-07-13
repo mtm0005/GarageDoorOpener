@@ -28,6 +28,22 @@ def timeout(seconds=10):
         return function_wrapper
     return timeout_decorator
 
+def try_thrice(func):
+    def function_wrapper(*args, **kwargs):
+        attempts = 1
+        while True:
+            try:
+                result = func(*args, **kwargs)
+                break
+            except BaseException:
+                if attempts < 3:
+                    attempts += 1
+                else:
+                    log_error('timeout', 'attempts: {}, func: {}'.format(attempts, func.__name__))
+                    result = -1
+        return result
+    return function_wrapper
+
 def get_serial():
     # Extract serial from cpuinfo file
     cpuserial = '0000000000000000'
@@ -107,7 +123,7 @@ def google_auth():
 
     return drive
 
-@timeout()
+@timeout(30)
 def upload_log_files(drive, admin_call=False):
     raspi_id = get_serial()
     # Verify RasPi serial number folder exists on Google Drive
