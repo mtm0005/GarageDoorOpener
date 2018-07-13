@@ -7,7 +7,7 @@ git checkout alpha
 git pull
 
 # Install required modules
-list_of_modules="firebase
+list_of_modules="python-firebase
 PyDrive
 pyfcm
 RPi.GPIO"
@@ -18,4 +18,4 @@ do
 done
 
 # modify crontab
-echo '*/5 * * * * ~/git/GarageDoorOpener/cronjob.sh' | crontab -
+echo '*/1 * * * * ~/git/GarageDoorOpener/cronjob.sh' | crontab -
