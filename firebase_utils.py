@@ -46,6 +46,8 @@ def notify_users(firebase_connection, raspi_id, api_key, status):
     utils.print_with_timestamp('Sending notification to user')
     push_service = pyfcm.FCMNotification(api_key=api_key)
 
+    utils.log_usage(status)
+
     # Loop until we get a device ID.
     phone_ids = None
     while not phone_ids:
