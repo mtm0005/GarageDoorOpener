@@ -326,9 +326,11 @@ def main():
                 firebase_utils.notify_users(firebase_connection, RASPI_SERIAL_NUM, API_KEY, current_door_state.name)
 
         # Exit if there is an update.
-        if git_utils.git_pull() != 'Already up-to-date.\n':
-            utils.log_error('update')
-            return 0
+        git_pull_result = git_utils.git_pull()
+        if git_pull_result:
+            if git_pull_result != 'Already up-to-date.\n':
+                utils.log_error('update')
+                return 0
 
         time.sleep(0.5)
 

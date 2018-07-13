@@ -2,6 +2,7 @@ import datetime
 import multiprocessing
 import os
 import subprocess
+import time
 
 from pydrive.auth import GoogleAuth
 from pydrive.drive import GoogleDrive
@@ -31,16 +32,20 @@ def timeout(seconds=10):
 def try_thrice(func):
     def function_wrapper(*args, **kwargs):
         attempts = 1
+        print('Entering try_thrice with the {} function'.format(func.__name__))
         while True:
             try:
+                print('Attempt: {}'.format(attempts))
                 result = func(*args, **kwargs)
                 break
             except BaseException:
                 if attempts < 3:
                     attempts += 1
+                    time.sleep(2)
                 else:
                     log_error('timeout', 'attempts: {}, func: {}'.format(attempts, func.__name__))
-                    result = -1
+                    result = None
+                    break
         return result
     return function_wrapper
 
