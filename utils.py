@@ -129,7 +129,7 @@ def google_auth():
     return drive
 
 @timeout(30)
-def upload_log_files(drive, admin_call=False):
+def upload_log_files(drive, desired_date=None):
     raspi_id = get_serial()
     # Verify RasPi serial number folder exists on Google Drive
     print('Looking for main folder')
@@ -148,9 +148,9 @@ def upload_log_files(drive, admin_call=False):
 
     dir_list = {'Error Logs': ERROR_DIR, 'Sensor Reading Logs': SENSOR_READINGS_DIR, 'Usage Logs': USAGE_DIR}
 
-    # Upload today's log files
-    if admin_call:
-        upload_file = datetime.datetime.now().strftime('%Y_%m_%d') + '.txt'
+    # Upload specific date log file
+    if desired_date:
+        upload_file = desired_date + '.txt'
         delete_file = None
     # Upload yesterday's log files
     else:

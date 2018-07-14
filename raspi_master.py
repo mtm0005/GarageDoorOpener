@@ -182,7 +182,7 @@ def get_distance_from_sensor_in_cm():
     distance_sum = 0
     num_samples = 20
     max_attempts = 3
-    for i in range(num_samples):
+    for _ in range(num_samples):
         
         reading = get_sensor_reading()
         attempts = 0
@@ -270,9 +270,17 @@ def process_command(firebase_connection, command):
     elif command == ValidCommands.calibrate.name:
         utils.print_with_timestamp('calibrate command')
         calibrate(firebase_connection)
-    elif command == ValidCommands.updateLogFile.name:
+    elif command.split('-')[0] == ValidCommands.updateLogFile.name:
+        # Proper structure of this firebase command is "udateLogFile-YYY_MM_DD"
+        # If the date poriton is omittied ("updateLogFile"), today's file will be uploaded
+        # as was previously the case
+        if len(command.split('-')) > 1:
+            date = command.split('-')[1]
+        else:
+            # Create today's date
+            date = datetime.datetime.strftime(datetime.datetime.now(), '%Y_%m_%d')
         utils.print_with_timestamp('updateLogFile command')
-        utils.upload_log_files(DRIVE_AUTH, admin_call=True)
+        utils.upload_log_files(DRIVE_AUTH, desired_date=date)
     else:
         utils.print_with_timestamp('invalid command')
         utils.log_error('processed-invalid-command', data=command)
