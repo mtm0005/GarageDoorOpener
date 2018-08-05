@@ -1,4 +1,5 @@
 from firebase import firebase
+import datetime
 import pyfcm
 import time
 
@@ -62,8 +63,13 @@ def notify_users(firebase_connection, raspi_id, api_key, status):
 
     results = []
     for phone in phone_ids.keys():
+        if status == 'open':
+            status = 'opened'
+
+        timestamp = datetime.datetime.now().strftime('%I:%M %p on %A %b %d, %Y')
+        msg = 'Your door was {} at {}'.format(status, timestamp)
         result = push_service.notify_single_device(registration_id=phone,
-            message_title='Garage door update', message_body=status, sound="Default")
+            message_title='Garage door update', message_body=msg, sound="Default")
 
         # TO-DO: Try to send notifications multiple times if there is a failure
         if not result['success']:
