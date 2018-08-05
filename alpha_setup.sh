@@ -3,8 +3,8 @@
 # Run this script
 
 # checkout alpha branch
-git checkout alpha
-git pull
+# git checkout alpha
+# git pull
 
 # Install required modules
 list_of_modules="python-firebase
@@ -18,4 +18,4 @@ do
 done
 
 # modify crontab
-echo '*/1 * * * * ~/git/GarageDoorOpener/cronjob.sh' | crontab -
+# echo '*/1 * * * * ~/git/GarageDoorOpener/cronjob.sh' | crontab -
