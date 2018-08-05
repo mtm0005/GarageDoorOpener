@@ -17,5 +17,7 @@ do
     sudo pip3 install $module
 done
 
+sudo pip3 install --upgrade google-auth-oauthlib
+
 # modify crontab
 # echo '*/1 * * * * ~/git/GarageDoorOpener/cronjob.sh' | crontab -
