@@ -8,6 +8,8 @@ import utils
 @utils.try_thrice
 def get_firebase_connection(url):
     # Get password from secrets.txt (created manually on each device)
+    # This is located in firebase under settings>Service accounts> Database secrets
+    # You must be logged in as admin, not as rasmcfall
     with open('secrets.txt', 'r') as f:
         password = f.readline().strip()
 
