@@ -155,7 +155,7 @@ def upload_log_files(drive, desired_date=None):
     # Upload yesterday's log files
     else:
         upload_file = datetime.datetime.strftime(datetime.datetime.now() - datetime.timedelta(1), '%Y_%m_%d') + '.txt'
-        delete_file = datetime.datetime.strftime(datetime.datetime.now() - datetime.timedelta(8), '%Y_%m_%d') + '.txt'
+        delete_file = datetime.datetime.strftime(datetime.datetime.now() - datetime.timedelta(15), '%Y_%m_%d') + '.txt'
     
     for key in dir_list.keys():
         print('Checking for {} upload file'.format(key))
